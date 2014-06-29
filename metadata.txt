@@ -26,7 +26,7 @@ email=demarco.giuseppe@gmail.com
 # tags are comma separated with spaces allowed
 tags=vector, clip, shapefile,difference, polygon, line
 
-homepage=https://github.com/demarcog/Clipper
+homepage=http://www.pienocampo.it/pyqgs2/
 tracker=https://github.com/demarcog/Clipper/issues
 repository=https://github.com/demarcog/Clipper.git
 icon=icon.png

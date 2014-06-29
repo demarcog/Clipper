@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Welcome to clipper’s documentation! &mdash; clipper 0.1 documentation</title>
+    <title>Clipper Plugin Manual &mdash; clipper 0.1 documentation</title>
     
     <link rel="stylesheet" href="_static/default.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
@@ -23,8 +23,8 @@
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <link rel="top" title="clipper 0.1 documentation" href="#" />
-    <link rel="next" title="Clipper Plugin Manual" href="manual.html" /> 
+    <link rel="top" title="clipper 0.1 documentation" href="index.html" />
+    <link rel="prev" title="Welcome to clipper’s documentation!" href="index.html" /> 
   </head>
   <body>
     <div class="related">
@@ -34,9 +34,9 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="manual.html" title="Clipper Plugin Manual"
-             accesskey="N">next</a> |</li>
-        <li><a href="#">clipper 0.1 documentation</a> &raquo;</li> 
+          <a href="index.html" title="Welcome to clipper’s documentation!"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">clipper 0.1 documentation</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -45,25 +45,23 @@
         <div class="bodywrapper">
           <div class="body">
             
-  <div class="section" id="welcome-to-clipper-s-documentation">
-<h1>Welcome to clipper&#8217;s documentation!<a class="headerlink" href="#welcome-to-clipper-s-documentation" title="Permalink to this headline">¶</a></h1>
-<p>Contents:</p>
-<div class="toctree-wrapper compound">
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="manual.html">Clipper Plugin Manual</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="manual.html#usage">Usage</a></li>
-</ul>
-</li>
-</ul>
+  <div class="section" id="clipper-plugin-manual">
+<h1>Clipper Plugin Manual<a class="headerlink" href="#clipper-plugin-manual" title="Permalink to this headline">¶</a></h1>
+<p>2014 © Giuseppe De Marco</p>
+<p>The clipper plugin is a python plugins that performs a missing feature of current (2.2) Qgis Version:
+clipping of features inside the same shapefile from a selected feature (line or polygon).
+Polygon clipping from a selected polygon features clips all intersecting features and returns clipped features with the same attributes deleting old ones: do not worry you have to confirm your edits by saving edits for the layer manually!
+Linestring clipping should be considered as trim/split feature: it takes as cutting line a selected line from active layer and split all intersecting lines. After the splitting you will have the chance to manually delete unwanted split parts.</p>
+<div class="section" id="usage">
+<h2>Usage<a class="headerlink" href="#usage" title="Permalink to this headline">¶</a></h2>
+<ol class="arabic simple">
+<li>Set a layer active and select a clipping/cutting feature otherwise the plugin will complain about no active layer found or no selected feature found.</li>
+<li>Click on the plugin button in plugins toolbar or access <em class="guilabel">Clipper</em> plugin, going to <em class="menuselection">Plugins ‣Clipper ‣ Clipper</em>.</li>
+<li>Check  for the result in Map Canvas and if it is satisfactory save edits.</li>
+</ol>
+<p>Any contribution is most appreciated.</p>
+<p>Giuseppe De Marco</p>
 </div>
-</div>
-<div class="section" id="indices-and-tables">
-<h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h1>
-<ul class="simple">
-<li><a class="reference internal" href="genindex.html"><em>Index</em></a></li>
-<li><a class="reference internal" href="py-modindex.html"><em>Module Index</em></a></li>
-<li><a class="reference internal" href="search.html"><em>Search Page</em></a></li>
-</ul>
 </div>
 
 
@@ -72,18 +70,20 @@
       </div>
       <div class="sphinxsidebar">
         <div class="sphinxsidebarwrapper">
-  <h3><a href="#">Table Of Contents</a></h3>
+  <h3><a href="index.html">Table Of Contents</a></h3>
   <ul>
-<li><a class="reference internal" href="#">Welcome to clipper&#8217;s documentation!</a></li>
-<li><a class="reference internal" href="#indices-and-tables">Indices and tables</a></li>
+<li><a class="reference internal" href="#">Clipper Plugin Manual</a><ul>
+<li><a class="reference internal" href="#usage">Usage</a></li>
+</ul>
+</li>
 </ul>
 
-  <h4>Next topic</h4>
-  <p class="topless"><a href="manual.html"
-                        title="next chapter">Clipper Plugin Manual</a></p>
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="index.html"
+                        title="previous chapter">Welcome to clipper&#8217;s documentation!</a></p>
   <h3>This Page</h3>
   <ul class="this-page-menu">
-    <li><a href="_sources/index.txt"
+    <li><a href="_sources/manual.txt"
            rel="nofollow">Show Source</a></li>
   </ul>
 <div id="searchbox" style="display: none">
@@ -110,9 +110,9 @@
           <a href="genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="manual.html" title="Clipper Plugin Manual"
-             >next</a> |</li>
-        <li><a href="#">clipper 0.1 documentation</a> &raquo;</li> 
+          <a href="index.html" title="Welcome to clipper’s documentation!"
+             >previous</a> |</li>
+        <li><a href="index.html">clipper 0.1 documentation</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">
