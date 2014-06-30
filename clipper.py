@@ -66,11 +66,11 @@ class clipper:
 
         # Add toolbar button and menu item
         self.iface.addToolBarIcon(self.action)
-        self.iface.addPluginToMenu(u"&Clipper", self.action)
+        self.iface.addPluginToVectorMenu(u"&Clipper", self.action)
 
     def unload(self):
         # Remove the plugin menu item and icon
-        self.iface.removePluginMenu(u"&Clipper", self.action)
+        self.iface.removePluginVectorMenu(u"&Clipper", self.action)
         self.iface.removeToolBarIcon(self.action)
 #---> Custom function begin
     def checkvector(self):
