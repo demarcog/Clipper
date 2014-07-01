@@ -12,10 +12,12 @@ Usage
 '''''
 1) Set a layer active and select a clipping/cutting feature otherwise the plugin will complain about no active layer found or no selected feature found.
 
-2) Click on the plugin button in plugins toolbar or access :guilabel:`Clipper` plugin, going to :menuselection:`Plugins -->Clipper --> Clipper`.
+2) Click on the plugin button in plugins toolbar or access :guilabel:`Clipper` plugin, going to :menuselection:`Vector -->Clipper --> Clipper`.
 
 3) Check  for the result in Map Canvas and if it is satisfactory save edits.
 
+version 0.2 lets you preview polygon intersecting features in a memory layer
+accessing :guilabel:`Clipper / Preview` plugin, going to :menuselection:`Vector -->Clipper --> Intersection Preview`.
 Any contribution is most appreciated.
 
 Giuseppe De Marco
