@@ -61,26 +61,34 @@ class clipper:
         self.action = QAction(
             QIcon(":/plugins/clipper/icon.png"),
             u"Clipper", self.iface.mainWindow())
+        self.action0 = QAction( QCoreApplication.translate("Clipper", "Clip" ), self.iface.mainWindow() )
         #--->0.2 new action in plugin menu: intersection preview
-        self.action1 = QAction( QCoreApplication.translate("Clipper", "Intersection Preview" ), self.iface.mainWindow() )
+        self.action1 = QAction( QCoreApplication.translate("Clipper", "Intersection Preview (Polygon)" ), self.iface.mainWindow() )
+        self.action2 = QAction( QCoreApplication.translate("Clipper", "Clipping Preview (Polygon)" ), self.iface.mainWindow() )
         # connect the action to the run method
-        #--->0.2 insert new action in plugin menu for the preview!!!!!
         self.action.triggered.connect(self.run)
+        #--> 0.2 clip directly from menu
+        self.action0.triggered.connect(self.run)
         #--->0.2  connect action to preview function
-        self.action1.triggered.connect(self.preview)
+        self.action1.triggered.connect(self.preview_int)
+        self.action2.triggered.connect(self.preview_clip)
 
         # Add toolbar button and menu item
         self.iface.addToolBarIcon(self.action)
-        self.iface.addPluginToVectorMenu(u"&Clipper", self.action)
-        #--->0.2  add to menu action preview
+        #--->0.2  add to menu action preview and clip
+        self.iface.addPluginToVectorMenu(u"&Clipper", self.action0)
         self.iface.addPluginToVectorMenu(u"&Clipper", self.action1)
+        self.iface.addPluginToVectorMenu(u"&Clipper", self.action2)
 
     def unload(self):
         # Remove the plugin menu item and icon
         self.iface.removePluginVectorMenu(u"&Clipper", self.action)
         self.iface.removeToolBarIcon(self.action)
-        #--->0.2  add to menu action preview
+        #--->0.2  remove from menu action0 clip
+        self.iface.removePluginVectorMenu(u"&Clipper", self.action0)
+        #--->0.2  remove from menu action preview
         self.iface.removePluginVectorMenu(u"&Clipper", self.action1)
+        self.iface.removePluginVectorMenu(u"&Clipper", self.action2)
         
 #---> Custom function begin
     def checkvector(self):
@@ -98,9 +106,9 @@ class clipper:
             self.iface.messageBar().pushMessage("Clipper"," No active layer found :please click on one!", level=QgsMessageBar.CRITICAL, duration=3)
             
     def clip(self):
-        #0.2 version check if there a result named layer in legend and remove it
+        #0.2 version check if there a intersect or clipped (preview) named layer in legend and remove it
         for name, layer in QgsMapLayerRegistry.instance().mapLayers().iteritems():
-            if layer.name()== "Intersect":
+            if (layer.name()== "Intersect" or layer.name() =="Clipped"):
                 layid = layer.id()
                 if layid:
                     QgsMapLayerRegistry.instance().removeMapLayer(layid)
@@ -122,33 +130,41 @@ class clipper:
                             selection = layer.selectedFeatures()
                             if len(selection)!=0:
                                 for f in layer.getFeatures():
-                                    if f.id() == selection[0].id():
-                                        fsel = f
+                                    #check for geometry validity...experimental
+                                    if f.geometry():
+                                        if f.id() == selection[0].id():
+                                            fsel = f
+                                    else:
+                                        self.iface.messageBar().pushMessage("Clipper","possible invalid geometry id:"+unicode(f.id()), level=QgsMessageBar.CRITICAL, duration=7)
                                 if fsel:
                                     #set layer editable
                                     layer.startEditing()
                                     count = 0
                                     for g in layer.getFeatures():
-                                        if g.id() != fsel.id():
-                                            if (g.geometry().intersects(fsel.geometry())):
-                                                #clipping non selected intersecting features
-                                                geometry = QgsGeometry.fromPolygon(g.geometry().asPolygon())
-                                                attributes = g.attributes()
-                                                diff = QgsFeature()
-                                                # Calculate the difference between the original 
-                                                # selected geometry and other features geometry only
-                                                # if the features intersects the selected geometry
-                                                #set new geometry
-                                                diff.setGeometry(g.geometry().difference(fsel.geometry()))
-                                                #copy attributes from original feature
-                                                diff.setAttributes(attributes)
-                                                #add modified feature to layer
-                                                layer.addFeature(diff)
-                                                #remove old feature
-                                                if layer.deleteFeature(g.id()):
-                                                    count +=1
-                                                else:
-                                                    count = 0 
+                                        #check for geometry validity...experimental
+                                        if g.geometry():
+                                            if g.id() != fsel.id():
+                                                if (g.geometry().intersects(fsel.geometry())):
+                                                    #clipping non selected intersecting features
+                                                    geometry = QgsGeometry.fromPolygon(g.geometry().asPolygon())
+                                                    attributes = g.attributes()
+                                                    diff = QgsFeature()
+                                                    # Calculate the difference between the original 
+                                                    # selected geometry and other features geometry only
+                                                    # if the features intersects the selected geometry
+                                                    #set new geometry
+                                                    diff.setGeometry(g.geometry().difference(fsel.geometry()))
+                                                    #copy attributes from original feature
+                                                    diff.setAttributes(attributes)
+                                                    #add modified feature to layer
+                                                    layer.addFeature(diff)
+                                                    #remove old feature
+                                                    if layer.deleteFeature(g.id()):
+                                                        count +=1
+                                                    else:
+                                                        count = 0 
+                                        else:
+                                            self.iface.messageBar().pushMessage("Clipper","possible invalid geometry id:"+unicode(g.id()), level=QgsMessageBar.CRITICAL, duration=7)
                                     #refresh the view and clear selection
                                     self.iface.mapCanvas().refresh()
                                     layer.setSelectedFeatures([])
@@ -168,6 +184,8 @@ class clipper:
                                 for f in layer.getFeatures():
                                     if f.id() == selection[0].id():
                                         fsel = f
+                                    else:
+                                        self.iface.messageBar().pushMessage("Clipper","possible invalid geometry id:"+unicode(f.id()), level=QgsMessageBar.CRITICAL, duration=7)
                                 if fsel:
                                     #unselect all features and set layer editable
                                     layer.startEditing()
@@ -195,7 +213,7 @@ class clipper:
                             else:
                                 self.iface.messageBar().pushMessage("Clipper"," Select at least one feature !", level=QgsMessageBar.CRITICAL, duration=4)
 #---> 0.2 new feature: polygon intersection preview
-    def preview(self):
+    def preview_int(self):
         layer = self.get_layer()
         if layer:
             #self.iface.messageBar().pushMessage("Clipper"," Vector layer found", level=QgsMessageBar.INFO, duration=5)
@@ -212,8 +230,12 @@ class clipper:
                             selection = layer.selectedFeatures()
                             if len(selection)!=0:
                                 for f in layer.getFeatures():
-                                    if f.id() == selection[0].id():
-                                        fsel = f
+                                    #check for geometry validity...experimental
+                                    if f.geometry():
+                                        if f.id() == selection[0].id():
+                                            fsel = f
+                                    else:
+                                        self.iface.messageBar().pushMessage("Clipper","possible invalid geometry id:"+unicode(f.id()), level=QgsMessageBar.CRITICAL, duration=7)
                                 if fsel:
                                     count = 0
                                     # Create a memory layer to store the result setting an initial crs
@@ -225,22 +247,27 @@ class clipper:
                                     #add memorylayer to canvas
                                     QgsMapLayerRegistry.instance().addMapLayer(resultl)
                                     for g in layer.getFeatures():
-                                        if g.id() != fsel.id():
-                                            if (g.geometry().intersects(fsel.geometry())):
-                                                #choose non selected intersecting features
-                                                geometry = QgsGeometry.fromPolygon(g.geometry().asPolygon())
-                                                attributes = g.attributes()
-                                                inters = QgsFeature()
-                                                # Calculate the difference between the original 
-                                                # selected geometry and other features geometry only
-                                                # if the features intersects the selected geometry
-                                                #set new geometry
-                                                inters.setGeometry(g.geometry().intersection(fsel.geometry()))
-                                                #copy attributes from original feature
-                                                inters.setAttributes(attributes)
-                                                #add modified feature to memory layer
-                                                resultpr.addFeatures([inters])
-                                                count+=1
+                                        #check for geometry validity...experimental
+                                        if g.geometry():
+                                            if g.id() != fsel.id():
+                                                if (g.geometry().intersects(fsel.geometry())):
+                                                    #choose non selected intersecting features
+                                                    geometry = QgsGeometry.fromPolygon(g.geometry().asPolygon())
+                                                    attributes = g.attributes()
+                                                    inters = QgsFeature()
+                                                    # Calculate the difference between the original 
+                                                    # selected geometry and other features geometry only
+                                                    # if the features intersects the selected geometry
+                                                    #set new geometry
+                                                    inters.setGeometry(g.geometry().intersection(fsel.geometry()))
+                                                    #copy attributes from original feature
+                                                    inters.setAttributes(attributes)
+                                                    #add modified feature to memory layer
+                                                    resultpr.addFeatures([inters])
+                                                    count+=1
+                                        else:
+                                            self.iface.messageBar().pushMessage("Clipper","possible invalid geometry id:"+unicode(g.id()), level=QgsMessageBar.CRITICAL, duration=7)
+                 
                                     #refresh the view
                                     self.iface.mapCanvas().refresh()
                                     #output messages
@@ -253,6 +280,79 @@ class clipper:
                                         self.iface.messageBar().pushWidget(widget, QgsMessageBar.INFO)
                                     else:
                                         widget = self.iface.messageBar().createMessage("Intersecting preview "+str(count)+" feature. To clip feature click on the button:", "Clip")
+                                        button = QPushButton(widget)
+                                        button.setText("Clip")
+                                        button.pressed.connect(self.clip)
+                                        widget.layout().addWidget(button)
+                                        self.iface.messageBar().pushWidget(widget, QgsMessageBar.INFO)
+                            else:
+                                self.iface.messageBar().pushMessage("Clipper"," Select at least one feature !", level=QgsMessageBar.CRITICAL, duration=4)
+#---> 0.2 new feature: polygon clipping preview
+    def preview_clip(self):
+        layer = self.get_layer()
+        if layer:
+            layername = layer.name()
+            provider=layer.dataProvider()
+            features = layer.getFeatures()
+            for name, layer in QgsMapLayerRegistry.instance().mapLayers().iteritems():
+                if layer.type() == QgsMapLayer.VectorLayer:
+                    if layer.name()== layername:
+                        #--->Polygon handling
+                        #check for layer type
+                        if layer.wkbType() == QGis.WKBPolygon:
+                            #get feature selection
+                            selection = layer.selectedFeatures()
+                            if len(selection)!=0:
+                                for f in layer.getFeatures():
+                                    #check for geometry validity...experimental
+                                    if f.geometry():
+                                        if f.id() == selection[0].id():
+                                            fsel = f
+                                    else:
+                                        self.iface.messageBar().pushMessage("Clipper","possible invalid geometry id:"+unicode(f.id()), level=QgsMessageBar.CRITICAL)
+                                if fsel:
+                                    count = 0
+                                    # Create a memory layer to store the result setting an initial crs
+                                    #to avoid qgis from asking
+                                    resultl = QgsVectorLayer("Polygon?crs=EPSG:4326", "Clipped", "memory")
+                                    #change memorylayer crs to layer crs
+                                    resultl.setCrs(layer.crs()) 
+                                    resultpr = resultl.dataProvider()
+                                    #add memorylayer to canvas
+                                    QgsMapLayerRegistry.instance().addMapLayer(resultl)
+                                    for g in layer.getFeatures():
+                                        #check for geometry validity...experimental
+                                        if g.geometry():
+                                            if g.id() != fsel.id():
+                                                if (g.geometry().intersects(fsel.geometry())):
+                                                #choose non selected intersecting features
+                                                    geometry = QgsGeometry.fromPolygon(g.geometry().asPolygon())
+                                                    attributes = g.attributes()
+                                                    clipped = QgsFeature()
+                                                    # Calculate the difference between the original 
+                                                    # selected geometry and other features geometry only
+                                                    # if the features intersects the selected geometry
+                                                    #set new geometry
+                                                    clipped.setGeometry(g.geometry().difference(fsel.geometry()))
+                                                    #copy attributes from original feature
+                                                    clipped.setAttributes(attributes)
+                                                    #add modified feature to memory layer
+                                                    resultpr.addFeatures([clipped])
+                                                    count+=1
+                                        else:
+                                            self.iface.messageBar().pushMessage("Clipper","possible invalid geometry id:"+unicode(g.id()), level=QgsMessageBar.CRITICAL)
+                                    #refresh the view
+                                    self.iface.mapCanvas().refresh()
+                                    #output messages
+                                    if count > 1:
+                                        widget = self.iface.messageBar().createMessage("Clipping preview of "+str(count)+" features. To clip features click on the button:", "Clip")
+                                        button = QPushButton(widget)
+                                        button.setText("Clip")
+                                        button.pressed.connect(self.clip)
+                                        widget.layout().addWidget(button)
+                                        self.iface.messageBar().pushWidget(widget, QgsMessageBar.INFO)
+                                    else:
+                                        widget = self.iface.messageBar().createMessage("Clipping preview "+str(count)+" feature. To clip feature click on the button:", "Clip")
                                         button = QPushButton(widget)
                                         button.setText("Clip")
                                         button.pressed.connect(self.clip)
