@@ -1,5 +1,5 @@
-Clipper Plugin Manual Ver. 0.2
-============================== 
+Clipper Plugin Manual Ver. 0.2.1
+================================
 
 2014 © Giuseppe De Marco 
 
@@ -22,7 +22,9 @@ Preview (for polygons only)
 
 1.1) Set a layer active and select a clipping/cutting feature otherwise the plugin will complain about no active layer found or no selected feature...
 
-2.1) Access :guilabel:`Clipper / Preview` plugin, going to :menuselection:`Vector -->Clipper --> Intersection Preview` and you will be shown a new memory layer in legend with the intersecting polygon parts  
+2.1) Access :guilabel:`Clipper` plugin, going to :menuselection:`Vector -->Clipper --> Intersection Preview` and you will be shown a new memory layer in legend with the intersecting polygon parts 
+
+2.2) Access :guilabel:`Clipper` plugin, going to :menuselection:`Vector -->Clipper --> Clipping Preview` and you will be shown a new memory layer in legend with the clipped polygons  
 
 3.1) If the result is fair enough you can either close the message widget and run Clipper plugin either push 'Clip' button in the widget: this will fire up the clipping process anyway...
 
