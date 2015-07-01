@@ -12,7 +12,7 @@
 name=Clipper
 qgisMinimumVersion=2.0
 description=This plugin lets you use clipping function in the same shapefile selecting a line or polygon as a clipping/cutting feature and then clips/splits all overlaying features
-version=0.2
+version=0.2.1
 author=Giuseppe De Marco
 email=demarco.giuseppe@gmail.com
 
@@ -21,7 +21,7 @@ email=demarco.giuseppe@gmail.com
 # Optional items:
 
 # Uncomment the following line and add your changelog entries:
-changelog = 0.1.1 Change location of menu loading from Plugin to Vector Menu 0.2 version lets you preview intersecting features (only for polygons) in a memory layer and then going to the real clipping feature 
+changelog = 0.1.1 Change location of menu loading from Plugin to Vector Menu 0.2 version lets you preview intersecting features (only for polygons) in a memory layer and then going to the real clipping feature 0.2.1 version has implemented geometry checking for feature to be clipped and an error messager bar displays not valid geometries id, there is also a menu item to preview intersect(polygons)
 
 # tags are comma separated with spaces allowed
 tags=vector, clip, shapefile,difference, polygon, line
