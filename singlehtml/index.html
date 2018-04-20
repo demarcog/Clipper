@@ -1,0 +1,112 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>clipper 1.0 documentation</title>
+    
+    <link rel="stylesheet" href="_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="None" href="index.html#document-index" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="nav-item nav-item-0"><a href="index.html#document-index">clipper 1.0 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="welcome-to-clipper-s-documentation">
+<h1>Welcome to clipper&#8217;s documentation!<a class="headerlink" href="#welcome-to-clipper-s-documentation" title="Permalink to this headline">¶</a></h1>
+<p>Contents:</p>
+<div class="toctree-wrapper compound">
+<span id="document-manual"></span><div class="section" id="clipper-plugin-manual-ver-1-0">
+<h2>Clipper Plugin Manual Ver. 1.0<a class="headerlink" href="#clipper-plugin-manual-ver-1-0" title="Permalink to this headline">¶</a></h2>
+<p>2018 © Giuseppe De Marco</p>
+<p>The clipper plugin is a python plugin that performs a missing feature of current (3.0) Qgis Version:
+clipping of features inside the same shapefile from a selected feature (line or polygon).
+Polygon clipping from a selected polygon feature clips all intersecting features and returns clipped features with the same attributes deleting old ones: do not worry you have to confirm your edits by saving edits for the layer manually!
+Linestring clipping should be considered as trim/split feature: it takes as cutting line a selected line from active layer and split all intersecting lines. After the splitting you will have the chance to manually delete unwanted split parts.</p>
+<div class="section" id="usage">
+<h3>Usage<a class="headerlink" href="#usage" title="Permalink to this headline">¶</a></h3>
+<ol class="arabic simple">
+<li>Set a layer active and select a clipping/cutting feature (line or polygon) otherwise the plugin will complain about no active layer found or no selected feature ...</li>
+<li>Click on the plugin button in plugins toolbar or access <span class="guilabel">Clipper</span> plugin, going to <span class="menuselection">Vector ‣Clipper ‣ Clipper</span>.</li>
+<li>Check  for the result in Map Canvas and if it is satisfactory save edits.</li>
+</ol>
+</div>
+<div class="section" id="preview-for-polygons-only">
+<h3>Preview (for polygons only)<a class="headerlink" href="#preview-for-polygons-only" title="Permalink to this headline">¶</a></h3>
+<p>1.1) Set a layer active and select a clipping/cutting feature otherwise the plugin will complain about no active layer found or no selected feature...</p>
+<p>2.1) Access <span class="guilabel">Clipper</span> plugin, going to <span class="menuselection">Vector ‣Clipper ‣ Intersection Preview</span> and you will be shown a new memory layer in legend with the intersecting polygon parts</p>
+<p>2.2) Access <span class="guilabel">Clipper</span> plugin, going to <span class="menuselection">Vector ‣Clipper ‣ Clipping Preview</span> and you will be shown a new memory layer in legend with the clipped polygons</p>
+<p>3.1) If the result is fair enough you can either close the message widget and run Clipper plugin either push &#8216;Clip&#8217; button in the widget: this will fire up the clipping process anyway...</p>
+<p>4.1) Remember to save your edits if you wish to keep modifications.</p>
+<p>Any contribution is most appreciated.</p>
+<p>Giuseppe De Marco</p>
+</div>
+</div>
+</div>
+</div>
+<div class="section" id="indices-and-tables">
+<h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h1>
+<ul class="simple">
+<li><a class="reference internal" href="genindex.html"><span>Index</span></a></li>
+<li><a class="reference internal" href="py-modindex.html"><span>Module Index</span></a></li>
+<li><a class="reference internal" href="search.html"><span>Search Page</span></a></li>
+</ul>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html#document-index">Table Of Contents</a></h3>
+  <ul>
+<li class="toctree-l1"><a class="reference internal" href="index.html#document-manual">Clipper Plugin Manual Ver. 1.0</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="index.html#usage">Usage</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#preview-for-polygons-only">Preview (for polygons only)</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="nav-item nav-item-0"><a href="index.html#document-index">clipper 1.0 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2018, Giuseppe De Marco.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.6.
+    </div>
+  </body>
+</html>

@@ -6,7 +6,7 @@
  This plugin lets you use clipping function in the same shapefile selecting a line or polygon clips all overlaying features
                              -------------------
         begin                : 2014-06-27
-        copyright            : (C) 2014 by Giuseppe De Marco
+        copyright            : (C) 2018 by Giuseppe De Marco
         email                : demarco.giuseppe@gmail.com
  ***************************************************************************/
 
@@ -20,8 +20,9 @@
  ***************************************************************************/
  This script initializes the plugin, making it known to QGIS.
 """
+from __future__ import absolute_import
 
 def classFactory(iface):
     # load clipper class from file clipper
-    from clipper import clipper
+    from .clipper import clipper
     return clipper(iface)
