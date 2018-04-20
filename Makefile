@@ -20,7 +20,7 @@
 # CONFIGURATION
 PLUGIN_UPLOAD = $(CURDIR)/plugin_upload.py
 
-QGISDIR=$HOME/.local/share/QGIS/QGIS3/profiles/default/
+QGISDIR=.qgis2
 
 # Makefile for a PyQGIS plugin
 
@@ -50,10 +50,10 @@ default: compile
 compile: $(RESOURCE_FILES)
 
 %_rc.py : %.qrc
-	pyrcc5 -o $*_rc.py  $<
+	pyrcc4 -o $*_rc.py  $<
 
 %.py : %.ui
-	pyuic5 -o $@ $<
+	pyuic4 -o $@ $<
 
 %.qm : %.ts
 	lrelease $<
