@@ -109,7 +109,7 @@ class clipper:
             self.iface.messageBar().pushMessage("Clipper"," No active layer found :please click on one!", level=QgsMessageBar.CRITICAL, duration=3)
             
     def clip(self):
-        #0.2 version check if there a intersect or clipped (preview) named layer in legend and remove it
+        #remove any intersect or clipped (preview) named layer in legend
         for name, layer in QgsMapLayerRegistry.instance().mapLayers().iteritems():
             if (layer.name()== "Intersect" or layer.name() =="Clipped"):
                 layid = layer.id()
@@ -127,9 +127,8 @@ class clipper:
                 if layer.type() == QgsMapLayer.VectorLayer:
                     if layer.name()== layername:
                         #--->Polygon handling
-                        #check for layer type
-#                        if layer.wkbType() == QGis.WKBPolygon or Qgis.MultiPolygon:
-                        if layer.wkbType() == 2 or 6:
+                        #check for layer type(polygon,multipolygon)
+                        if layer.wkbType() == 3 or 6:
                             #get feature selection
                             selection = layer.selectedFeatures()
                             if len(selection)!=0:
@@ -145,7 +144,7 @@ class clipper:
                                     layer.startEditing()
                                     count = 0
                                     for g in layer.getFeatures():
-                                        #check for geometry validity...experimental
+                                        #check for geometry validity
                                         if g.geometry():
                                             if g.id() != fsel.id():
                                                 if (g.geometry().intersects(fsel.geometry())):
@@ -179,9 +178,8 @@ class clipper:
                             else:
                                 self.iface.messageBar().pushMessage("Clipper"," Select at least one feature !", level=QgsMessageBar.CRITICAL, duration=4)
                         #--->Linestring handling
-                        #A bit of working is needed for LineString objects...
-                        elif layer.wkbType() == QGis.WKBLineString:
-                            #self.iface.messageBar().pushMessage("Clipper"," Line type layer found: clip function works as a line splitter: one has to manually delete wanted clipped parts...", level=QgsMessageBar.WARNING, duration=5)
+                        #check for mline or multiline type
+                        elif layer.wkbType() == 2 or 5:
                             #get the cutting line from feature selection
                             selection = layer.selectedFeatures()
                             if len(selection) != 0:
@@ -216,9 +214,10 @@ class clipper:
                             
                             else:
                                 self.iface.messageBar().pushMessage("Clipper"," Select at least one feature !", level=QgsMessageBar.CRITICAL, duration=4)
-#---> 0.2 new feature: polygon intersection preview
+                        
+    #polygon intersection preview: possibile only in polygon type layers
     def preview_int(self):
-        #0.2 version check if there a intersect or clipped (preview) named layer in legend and remove it
+        #remove any intersect or clipped (preview) named layer in legend
         for name, layer in QgsMapLayerRegistry.instance().mapLayers().iteritems():
             if (layer.name()== "Intersect" or layer.name() =="Clipped"):
                 layid = layer.id()
@@ -238,8 +237,7 @@ class clipper:
                     if layer.name()== layername:
                         #--->Polygon handling
                         #check for layer type
-                        if layer.wkbType() == 2 or 6:
-#                        if layer.wkbType() == QGis.WKBPolygon:
+                        if layer.wkbType() == 3 or 6:
                             #get feature selection
                             selection = layer.selectedFeatures()
                             if len(selection)!=0:
@@ -255,7 +253,7 @@ class clipper:
 #                                    pdb.set_trace() #debug
                                     count = 0
                                     # Create a memory layer to store the result setting an initial crs
-                                    #to avoid qgis from asking
+                                    # to avoid qgis from asking which crs or type of new vector layer
                                     if layer.wkbType() == 6:
                                         resultl = QgsVectorLayer("MultiPolygon?crs=EPSG:4326", "Intersect", "memory")
                                     else:
@@ -314,7 +312,10 @@ class clipper:
                                         self.iface.messageBar().pushWidget(widget, QgsMessageBar.INFO)
                             else:
                                 self.iface.messageBar().pushMessage("Clipper"," Select at least one feature !", level=QgsMessageBar.CRITICAL, duration=4)
-#---> 0.2 new feature: polygon clipping preview
+                        else:
+                            self.iface.messageBar().pushMessage("Clipper"," Wrong type of layer to perform intersection preview, sorry ..." , level=QgsMessageBar.CRITICAL, duration=4)    
+
+    #polygon clipping preview
     def preview_clip(self):
         layer = self.get_layer()
         if layer:
@@ -325,14 +326,13 @@ class clipper:
                 if layer.type() == QgsMapLayer.VectorLayer:
                     if layer.name()== layername:
                         #--->Polygon handling
-                        #check for layer type
-                        if layer.wkbType() == 2 or 6:
-#                        if layer.wkbType() == QGis.WKBPolygon:
+                        #check for layer type compatibility
+                        if layer.wkbType() == 3 or 6:
                             #get feature selection
                             selection = layer.selectedFeatures()
                             if len(selection)!=0:
                                 for f in layer.getFeatures():
-                                    #check for geometry validity...experimental
+                                    #check for geometry validity
                                     if f.geometry():
                                         if f.id() == selection[0].id():
                                             fsel = f
@@ -341,9 +341,12 @@ class clipper:
                                 if fsel:
                                     count = 0
                                     # Create a memory layer to store the result setting an initial crs
-                                    #to avoid qgis from asking
-                                    resultl = QgsVectorLayer("Polygon?crs=EPSG:4326", "Clipped", "memory")
-                                    #change memorylayer crs to layer crs
+                                    # to avoid qgis from asking which crs or type of new vector layer
+                                    if layer.wkbType() == 6:
+                                        resultl = QgsVectorLayer("MultiPolygon?crs=EPSG:4326", "Intersect", "memory")
+                                    elif layer.wkbType() == 3:
+                                        resultl = QgsVectorLayer("Polygon?crs=EPSG:4326", "Intersect", "memory")
+                                    #change memorylayer crs to match layer crs
                                     resultl.setCrs(layer.crs()) 
                                     resultpr = resultl.dataProvider()
                                     #add memorylayer to canvas
@@ -388,6 +391,8 @@ class clipper:
                                         self.iface.messageBar().pushWidget(widget, QgsMessageBar.INFO)
                             else:
                                 self.iface.messageBar().pushMessage("Clipper"," Select at least one feature !", level=QgsMessageBar.CRITICAL, duration=4)
+                        else:
+                            self.iface.messageBar().pushMessage("Clipper"," Wrong type of layer to perform cillping preview, sorry ..." , level=QgsMessageBar.CRITICAL, duration=4)        
 #---> Custom functions end 
     # run method that performs all the real work
     def run(self):
