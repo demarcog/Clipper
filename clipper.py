@@ -32,7 +32,7 @@ from qgis.gui import *
 # Initialize Qt resources from file resources.py
 import resources_rc
 #debug
-#import pdb
+import pdb
 # Import the code for the dialog
 #from clipperdialog import clipperDialog
 import os.path
@@ -128,7 +128,7 @@ class clipper:
                     if layer.name()== layername:
                         #--->Polygon handling
                         #check for layer type(polygon,multipolygon)
-                        if layer.wkbType() == 3 or 6:
+                        if layer.wkbType() == 3 or layer.wkbType() == 6:
                             #get feature selection
                             selection = layer.selectedFeatures()
                             if len(selection)!=0:
@@ -138,7 +138,7 @@ class clipper:
                                         if f.id() == selection[0].id():
                                             fsel = f
                                     else:
-                                        self.iface.messageBar().pushMessage("Clipper","possible invalid geometry id:"+unicode(f.id()), level=QgsMessageBar.CRITICAL, duration=7)
+                                        self.iface.messageBar().pushMessage("Clipper","possible invalid geometry id:"+unicode(f.id()), level=QgsMessageBar.CRITICAL, duration=8)
                                 if fsel:
                                     #set layer editable
                                     layer.startEditing()
@@ -176,10 +176,10 @@ class clipper:
                                     else:
                                         self.iface.messageBar().pushMessage("Clipper",""+str(count)+" feature clipped: "+"   Remember to save your edits...", level=QgsMessageBar.INFO)
                             else:
-                                self.iface.messageBar().pushMessage("Clipper"," Select at least one feature !", level=QgsMessageBar.CRITICAL, duration=4)
+                                self.iface.messageBar().pushMessage("Clipper"," Select at least one feature !", level=QgsMessageBar.CRITICAL, duration=8)
                         #--->Linestring handling
                         #check for mline or multiline type
-                        elif layer.wkbType() == 2 or 5:
+                        elif layer.wkbType() == 2 or layer.wkbType() == 5:
                             #get the cutting line from feature selection
                             selection = layer.selectedFeatures()
                             if len(selection) != 0:
@@ -213,7 +213,7 @@ class clipper:
                                             self.iface.messageBar().pushMessage("Clipper",""+str(count)+" feature split: "+"   Remember to save your edits...", level=QgsMessageBar.INFO)
                             
                             else:
-                                self.iface.messageBar().pushMessage("Clipper"," Select at least one feature !", level=QgsMessageBar.CRITICAL, duration=4)
+                                self.iface.messageBar().pushMessage("Clipper"," Select at least one feature !", level=QgsMessageBar.CRITICAL, duration=8)
                         
     #polygon intersection preview: possibile only in polygon type layers
     def preview_int(self):
@@ -228,7 +228,6 @@ class clipper:
         #begin intersect Preview
         layer = self.get_layer()
         if layer:
-            #self.iface.messageBar().pushMessage("Clipper"," Vector layer found", level=QgsMessageBar.INFO, duration=5)
             layername = layer.name()
             provider=layer.dataProvider()
             features = layer.getFeatures()
@@ -237,7 +236,10 @@ class clipper:
                     if layer.name()== layername:
                         #--->Polygon handling
                         #check for layer type
-                        if layer.wkbType() == 3 or 6:
+                        #debug
+                        pyqtRemoveInputHook()
+                        pdb.set_trace()
+                        if layer.wkbType() == 3 or layer.wkbType() == 6:
                             #get feature selection
                             selection = layer.selectedFeatures()
                             if len(selection)!=0:
@@ -311,9 +313,9 @@ class clipper:
                                         widget.layout().addWidget(button)
                                         self.iface.messageBar().pushWidget(widget, QgsMessageBar.INFO)
                             else:
-                                self.iface.messageBar().pushMessage("Clipper"," Select at least one feature !", level=QgsMessageBar.CRITICAL, duration=4)
+                                self.iface.messageBar().pushMessage("Clipper"," Select at least one feature !", level=QgsMessageBar.CRITICAL, duration=8)
                         else:
-                            self.iface.messageBar().pushMessage("Clipper"," Wrong type of layer to perform intersection preview, sorry ..." , level=QgsMessageBar.CRITICAL, duration=4)    
+                            self.iface.messageBar().pushMessage("Clipper"," Wrong type of layer to perform intersection preview, sorry ..." , level=QgsMessageBar.CRITICAL, duration=8)    
 
     #polygon clipping preview
     def preview_clip(self):
@@ -327,7 +329,7 @@ class clipper:
                     if layer.name()== layername:
                         #--->Polygon handling
                         #check for layer type compatibility
-                        if layer.wkbType() == 3 or 6:
+                        if layer.wkbType() == 3 or layer.wkbType() == 6:
                             #get feature selection
                             selection = layer.selectedFeatures()
                             if len(selection)!=0:
@@ -390,9 +392,9 @@ class clipper:
                                         widget.layout().addWidget(button)
                                         self.iface.messageBar().pushWidget(widget, QgsMessageBar.INFO)
                             else:
-                                self.iface.messageBar().pushMessage("Clipper"," Select at least one feature !", level=QgsMessageBar.CRITICAL, duration=4)
+                                self.iface.messageBar().pushMessage("Clipper"," Select at least one feature !", level=QgsMessageBar.CRITICAL, duration=7)
                         else:
-                            self.iface.messageBar().pushMessage("Clipper"," Wrong type of layer to perform cillping preview, sorry ..." , level=QgsMessageBar.CRITICAL, duration=4)        
+                            self.iface.messageBar().pushMessage("Clipper"," Wrong type of layer to perform cillping preview, sorry ..." , level=QgsMessageBar.CRITICAL, duration=7)        
 #---> Custom functions end 
     # run method that performs all the real work
     def run(self):
