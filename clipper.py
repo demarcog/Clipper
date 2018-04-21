@@ -7,6 +7,7 @@
   a line or polygon clips all overlaying features
                               -------------------
         begin                : 2014-06-27
+        latest                : 2018-04-20 
         copyright            : (C) 2014 by Giuseppe De Marco
         email                : demarco.giuseppe@gmail.com
  ***************************************************************************/
@@ -30,6 +31,8 @@ from qgis.core import *
 from qgis.gui import *
 # Initialize Qt resources from file resources.py
 import resources_rc
+#debug
+#import pdb
 # Import the code for the dialog
 #from clipperdialog import clipperDialog
 import os.path
@@ -215,6 +218,15 @@ class clipper:
                                 self.iface.messageBar().pushMessage("Clipper"," Select at least one feature !", level=QgsMessageBar.CRITICAL, duration=4)
 #---> 0.2 new feature: polygon intersection preview
     def preview_int(self):
+        #0.2 version check if there a intersect or clipped (preview) named layer in legend and remove it
+        for name, layer in QgsMapLayerRegistry.instance().mapLayers().iteritems():
+            if (layer.name()== "Intersect" or layer.name() =="Clipped"):
+                layid = layer.id()
+                if layid:
+                    QgsMapLayerRegistry.instance().removeMapLayer(layid)
+        #close previously open messageBar
+        self.iface.messageBar().popWidget()
+        #begin intersect Preview
         layer = self.get_layer()
         if layer:
             #self.iface.messageBar().pushMessage("Clipper"," Vector layer found", level=QgsMessageBar.INFO, duration=5)
@@ -239,22 +251,33 @@ class clipper:
                                     else:
                                         self.iface.messageBar().pushMessage("Clipper","possible invalid geometry id:"+unicode(f.id()), level=QgsMessageBar.CRITICAL, duration=7)
                                 if fsel:
+#                                    pyqtRemoveInputHook()#debug
+#                                    pdb.set_trace() #debug
                                     count = 0
                                     # Create a memory layer to store the result setting an initial crs
                                     #to avoid qgis from asking
-                                    resultl = QgsVectorLayer("Polygon?crs=EPSG:4326", "Intersect", "memory")
-                                    #change memorylayer crs to layer crs
+                                    if layer.wkbType() == 6:
+                                        resultl = QgsVectorLayer("MultiPolygon?crs=EPSG:4326", "Intersect", "memory")
+                                    else:
+                                        resultl = QgsVectorLayer("Polygon?crs=EPSG:4326", "Intersect", "memory")
+                                    #change memorylayer crs to layer crs initilize data and start editing
                                     resultl.setCrs(layer.crs()) 
                                     resultpr = resultl.dataProvider()
+                                    resultl.startEditing()
                                     #add memorylayer to canvas
                                     QgsMapLayerRegistry.instance().addMapLayer(resultl)
                                     for g in layer.getFeatures():
-                                        #check for geometry validity...experimental
+                                        #check for geometry validity
                                         if g.geometry():
                                             if g.id() != fsel.id():
+                                                #check for geometry type
+                                                type = g.geometry().wkbType()
                                                 if (g.geometry().intersects(fsel.geometry())):
-                                                    #choose non selected intersecting features
-                                                    geometry = QgsGeometry.fromPolygon(g.geometry().asPolygon())
+                                                    #choose non selected intersecting features checkin multi-Polygon
+                                                    if type == 6:
+                                                       geometry = QgsGeometry.fromMultiPolygon(g.geometry().asMultiPolygon())
+                                                    else:
+                                                       geometry = QgsGeometry.fromPolygon(g.geometry().asPolygon())
                                                     attributes = g.attributes()
                                                     inters = QgsFeature()
                                                     # Calculate the difference between the original 
@@ -267,9 +290,10 @@ class clipper:
                                                     #add modified feature to memory layer
                                                     resultpr.addFeatures([inters])
                                                     count+=1
+                                                    resultl.commitChanges()
+                                                    #type = None
                                         else:
                                             self.iface.messageBar().pushMessage("Clipper","possible invalid geometry id:"+unicode(g.id()), level=QgsMessageBar.CRITICAL, duration=7)
-                 
                                     #refresh the view
                                     self.iface.mapCanvas().refresh()
                                     #output messages
@@ -280,6 +304,7 @@ class clipper:
                                         button.pressed.connect(self.clip)
                                         widget.layout().addWidget(button)
                                         self.iface.messageBar().pushWidget(widget, QgsMessageBar.INFO)
+                                        resultl.commitChanges()
                                     else:
                                         widget = self.iface.messageBar().createMessage("Intersecting preview "+str(count)+" feature. To clip feature click on the button:", "Clip")
                                         button = QPushButton(widget)
