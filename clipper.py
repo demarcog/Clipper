@@ -218,6 +218,15 @@ class clipper(object):
                                 self.iface.messageBar().pushMessage("Clipper"," Select at least one feature !", level=Qgis.Critical, duration=4)
 #---> 0.2 new feature: polygon intersection preview
     def preview_int(self):
+        #remove intersect or clipped (preview) named layer in layers list 
+        for name, layer in list(QgsProject.instance().mapLayers().items()):
+            if (layer.name()== "Intersect" or layer.name() =="Clipped"):
+                layid = layer.id()
+                if layid:
+                    QgsProject.instance().removeMapLayer(layid)
+        #close previously open messageBar
+        self.iface.messageBar().popWidget()
+        #preview begin
         layer = self.get_layer()
         if layer:
             #self.iface.messageBar().pushMessage("Clipper"," Vector layer found", level=Qgis.Info, duration=5)
@@ -243,8 +252,11 @@ class clipper(object):
                                 if fsel:
                                     count = 0
                                     # Create a memory layer to store the result setting an initial crs
-                                    #to avoid qgis from asking
-                                    resultl = QgsVectorLayer("Polygon?crs=EPSG:4326", "Intersect", "memory")
+                                    #to avoid qgis from asking and check for poligon/multipolygon
+                                    if layer.wkbType() == 2:
+                                        resultl = QgsVectorLayer("Polygon?crs=EPSG:4326", "Intersect", "memory")
+                                    if layer.wkbType() == 6:
+                                        resultl = QgsVectorLayer("MultiPolygon?crs=EPSG:4326", "Intersect", "memory")
                                     #change memorylayer crs to layer crs
                                     resultl.setCrs(layer.crs()) 
                                     resultpr = resultl.dataProvider()
