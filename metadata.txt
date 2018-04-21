@@ -13,7 +13,7 @@ name=Clipper
 qgisMinimumVersion=2.0
 description=This plugin lets you use clipping function in the same shapefile selecting a line or polygon as a clipping/cutting feature and then clips/splits all overlaying features
 about=Clipper plugin for Qgis 2.x 2014 © Giuseppe De Marco The clipper plugin is a python plugins that performs a missing feature of current (2.x ) Qgis Version: clipping of features inside the same shapefile from a selected feature (line or polygon). Polygon clipping from a selected polygon features clips all intersecting features and returns clipped…
-version=0.2.1
+version=0.3
 author=Giuseppe De Marco
 email=demarco.giuseppe@gmail.com
 
