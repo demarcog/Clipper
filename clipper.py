@@ -32,7 +32,7 @@ from qgis.gui import *
 # Initialize Qt resources from file resources.py
 import resources_rc
 #debug
-import pdb
+#import pdb
 # Import the code for the dialog
 #from clipperdialog import clipperDialog
 import os.path
@@ -237,8 +237,8 @@ class clipper:
                         #--->Polygon handling
                         #check for layer type
                         #debug
-                        pyqtRemoveInputHook()
-                        pdb.set_trace()
+                        #pyqtRemoveInputHook()
+                        #pdb.set_trace()
                         if layer.wkbType() == 3 or layer.wkbType() == 6:
                             #get feature selection
                             selection = layer.selectedFeatures()
