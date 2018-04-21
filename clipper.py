@@ -253,10 +253,10 @@ class clipper(object):
                                     count = 0
                                     # Create a memory layer to store the result setting an initial crs
                                     #to avoid qgis from asking and check for poligon/multipolygon
-                                    if layer.wkbType() == 2:
-                                        resultl = QgsVectorLayer("Polygon?crs=EPSG:4326", "Intersect", "memory")
                                     if layer.wkbType() == 6:
                                         resultl = QgsVectorLayer("MultiPolygon?crs=EPSG:4326", "Intersect", "memory")
+                                    else:
+                                        resultl = QgsVectorLayer("Polygon?crs=EPSG:4326", "Intersect", "memory")
                                     #change memorylayer crs to layer crs
                                     resultl.setCrs(layer.crs()) 
                                     resultpr = resultl.dataProvider()
