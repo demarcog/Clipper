@@ -34,10 +34,11 @@ from . import resources_rc
 # Import the code for the dialog
 #from clipperdialog import clipperDialog
 import os.path
-
+# global variables
+global lyr 
+lyr = None
 
 class clipper(object):
-
     def __init__(self, iface):
         # Save reference to the QGIS interface
         self.iface = iface
@@ -62,36 +63,68 @@ class clipper(object):
         self.action = QAction(
             QIcon(":/plugins/clipper/icon.png"),
             u"Clipper", self.iface.mainWindow())
+        self.action3 = QAction(
+            QIcon(":/plugins/clipper/icon_prev_int.png"),
+            u"Clipper", self.iface.mainWindow())
+        self.action4 = QAction(
+            QIcon(":/plugins/clipper/icon_prev_clip.png"),
+            u"Clipper", self.iface.mainWindow())
         self.action0 = QAction( QCoreApplication.translate("Clipper", "Clip" ), self.iface.mainWindow() )
-        #--->0.2 new action in plugin menu: intersection preview
+        #men items intersection and clipping preview
         self.action1 = QAction( QCoreApplication.translate("Clipper", "Intersection Preview (Polygon)" ), self.iface.mainWindow() )
         self.action2 = QAction( QCoreApplication.translate("Clipper", "Clipping Preview (Polygon)" ), self.iface.mainWindow() )
-        # connect the action to the run method
+        #connect the action to the run method
         self.action.triggered.connect(self.run)
-        #--> 0.2 clip directly from menu
+        #clip directly from menu
         self.action0.triggered.connect(self.run)
-        #--->0.2  connect action to preview function
+        #connect action to preview function
         self.action1.triggered.connect(self.preview_int)
         self.action2.triggered.connect(self.preview_clip)
+        self.action3.triggered.connect(self.preview_int)
+        self.action4.triggered.connect(self.preview_clip)
+
 
         # Add toolbar button and menu item
         self.iface.addToolBarIcon(self.action)
-        #--->0.2  add to menu action preview and clip
+        self.iface.addToolBarIcon(self.action3)
+        self.iface.addToolBarIcon(self.action4)
+        
+        #Add to menu action preview and clip
         self.iface.addPluginToVectorMenu(u"&Clipper", self.action0)
         self.iface.addPluginToVectorMenu(u"&Clipper", self.action1)
         self.iface.addPluginToVectorMenu(u"&Clipper", self.action2)
 
     def unload(self):
-        # Remove the plugin menu item and icon
+        #Remove the plugin menu items and icons
         self.iface.removePluginVectorMenu(u"&Clipper", self.action)
-        self.iface.removeToolBarIcon(self.action)
-        #--->0.2  remove from menu action0 clip
         self.iface.removePluginVectorMenu(u"&Clipper", self.action0)
-        #--->0.2  remove from menu action preview
         self.iface.removePluginVectorMenu(u"&Clipper", self.action1)
         self.iface.removePluginVectorMenu(u"&Clipper", self.action2)
+        self.iface.removeToolBarIcon(self.action)
+        self.iface.removeToolBarIcon(self.action3)
+        self.iface.removeToolBarIcon(self.action4)
+
         
 #---> Custom function begin
+    def clear(self):
+        if lyr != None:
+            layerid = lyr.id()
+            if layerid:
+                if not QgsProject.instance().layerTreeRoot().findLayer(layerid).isVisible():
+                    QgsProject.instance().layerTreeRoot().findLayer(layerid).setItemVisibilityChecked(True)
+        self.iface.messageBar().clearWidgets()
+        self.clear_result()
+        return
+    
+    def clear_result(self):
+        #check if there a intersect or clipped (preview) named layer in legend and remove it
+        for name, layer in list(QgsProject.instance().mapLayers().items()):
+            if (layer.name()== "Intersect" or layer.name() =="Clipped"):
+                layid = layer.id()
+                if layid:
+                    QgsProject.instance().removeMapLayer(layid)
+        return
+    
     def checkvector(self):
         count = 0
         for name, layer in list(QgsProject.instance().mapLayers().items()):
@@ -102,31 +135,27 @@ class clipper(object):
     def get_layer(self):
         layer = self.iface.mapCanvas().currentLayer()
         if layer:
-            return layer 
+            return layer
         else:
             self.iface.messageBar().pushMessage("Clipper"," No active layer found :please click on one!", level=Qgis.Critical, duration=3)
             
     def clip(self):
-        #0.2 version check if there a intersect or clipped (preview) named layer in legend and remove it
-        for name, layer in list(QgsProject.instance().mapLayers().items()):
-            if (layer.name()== "Intersect" or layer.name() =="Clipped"):
-                layid = layer.id()
-                if layid:
-                    QgsProject.instance().removeMapLayer(layid)
+        self.clear_result()
         #close previously open messageBar
         self.iface.messageBar().popWidget()
         #clipping begin
         layer = self.get_layer()
         if layer:
             layername = layer.name()
-            provider=layer.dataProvider()
-            features = layer.getFeatures()
+#            provider=layer.dataProvider()
+#            features = layer.getFeatures()
             for name, layer in list(QgsProject.instance().mapLayers().items()):
                 if layer.type() == QgsMapLayer.VectorLayer:
                     if layer.name()== layername:
                         #--->Polygon handling
                         #check for layer type
-                        if layer.wkbType() ==2 or 6:
+                        if layer.wkbType() ==3 or layer.wkbType() == 6:
+                            layid = layer.id()
                             #get feature selection
                             selection = layer.selectedFeatures()
                             if len(selection)!=0:
@@ -142,7 +171,7 @@ class clipper(object):
                                     layer.startEditing()
                                     count = 0
                                     for g in layer.getFeatures():
-                                        #check for geometry validity...experimental
+                                        #check for geometry validity
                                         if g.geometry():
                                             if g.id() != fsel.id():
                                                 if (g.geometry().intersects(fsel.geometry())):
@@ -170,6 +199,9 @@ class clipper(object):
                                     self.iface.mapCanvas().refresh()
                                     self.iface.mapCanvas().currentLayer().selectAll()
                                     self.iface.mapCanvas().currentLayer().invertSelection()
+                                    #restore layer visibility
+                                    if not QgsProject.instance().layerTreeRoot().findLayer(layid).isVisible():
+                                        QgsProject.instance().layerTreeRoot().findLayer(layid).setItemVisibilityChecked(True)
                                     if count > 1:
                                         self.iface.messageBar().pushMessage("Clipper",""+str(count)+" features clipped: "+"   Remember to save your edits...", level=Qgis.Info)
                                     else:
@@ -178,7 +210,7 @@ class clipper(object):
                                 self.iface.messageBar().pushMessage("Clipper"," Select at least one feature !", level=Qgis.Critical, duration=4)
                         #--->Linestring handling
                         #A bit of working is needed for LineString objects...
-                        elif layer.wkbType() == 1:
+                        elif layer.wkbType() == 1 or layer.wkbType() == 5:
                             #self.iface.messageBar().pushMessage("Clipper"," Line type layer found: clip function works as a line splitter: one has to manually delete wanted clipped parts...", level=QgsMessageBar.WARNING, duration=5)
                             #get the cutting line from feature selection
                             selection = layer.selectedFeatures()
@@ -215,30 +247,25 @@ class clipper(object):
                                             self.iface.messageBar().pushMessage("Clipper",""+str(count)+" feature split: "+"   Remember to save your edits...", level=Qgis.Info)
                             
                             else:
-                                self.iface.messageBar().pushMessage("Clipper"," Select at least one feature !", level=Qgis.Critical, duration=4)
-#---> 0.2 new feature: polygon intersection preview
+                                self.iface.messageBar().pushCritical("Clipper"," Select at least one feature ! aborting ...")
+#polygon intersection preview
     def preview_int(self):
         #remove intersect or clipped (preview) named layer in layers list 
-        for name, layer in list(QgsProject.instance().mapLayers().items()):
-            if (layer.name()== "Intersect" or layer.name() =="Clipped"):
-                layid = layer.id()
-                if layid:
-                    QgsProject.instance().removeMapLayer(layid)
+        self.clear_result()
         #close previously open messageBar
         self.iface.messageBar().popWidget()
         #preview begin
         layer = self.get_layer()
         if layer:
-            #self.iface.messageBar().pushMessage("Clipper"," Vector layer found", level=Qgis.Info, duration=5)
             layername = layer.name()
-            provider=layer.dataProvider()
-            features = layer.getFeatures()
+            #provider=layer.dataProvider()
+            #features = layer.getFeatures()
             for name, layer in list(QgsProject.instance().mapLayers().items()):
                 if layer.type() == QgsMapLayer.VectorLayer:
                     if layer.name()== layername:
                         #--->Polygon handling
                         #check for layer type
-                        if layer.wkbType() == 2 or 6:
+                        if layer.wkbType() == 3 or layer.wkbType() == 6:
                             #get feature selection
                             selection = layer.selectedFeatures()
                             if len(selection)!=0:
@@ -258,6 +285,7 @@ class clipper(object):
                                     else:
                                         resultl = QgsVectorLayer("Polygon?crs=EPSG:4326", "Intersect", "memory")
                                     #change memorylayer crs to layer crs
+                                    resultl.startEditing()
                                     resultl.setCrs(layer.crs()) 
                                     resultpr = resultl.dataProvider()
                                     #add memorylayer to canvas
@@ -268,7 +296,10 @@ class clipper(object):
                                             if g.id() != fsel.id():
                                                 if (g.geometry().intersects(fsel.geometry())):
                                                     #choose non selected intersecting features
-                                                    geometry = QgsGeometry.fromPolygonXY(g.geometry().asPolygon())
+                                                    if g.geometry().wkbType() == 6:
+                                                        geometry = QgsGeometry.fromMultiPolygonXY(g.geometry().asMultiPolygon())
+                                                    else:
+                                                        geometry = QgsGeometry.fromPolygonXY(g.geometry().asPolygon())
                                                     attributes = g.attributes()
                                                     inters = QgsFeature()
                                                     # Calculate the difference between the original 
@@ -283,7 +314,7 @@ class clipper(object):
                                                     count+=1
                                         else:
                                             self.iface.messageBar().pushCritical("Clipper","possible invalid geometry id:"+str(g.id()))
-                 
+                                    resultl.commitChanges()
                                     #refresh the view
                                     self.iface.mapCanvas().refresh()
                                     #output messages
@@ -293,29 +324,47 @@ class clipper(object):
                                         button.setText("Clip")
                                         button.pressed.connect(self.clip)
                                         widget.layout().addWidget(button)
-                                        self.iface.messageBar().pushWidget(widget, Qgis.Info)
+                                        button1 = QPushButton(widget)
+                                        button1.setText("Dismiss")
+                                        button1.pressed.connect(self.clear)
+                                        widget.layout().addWidget(button1)
+                                        self.iface.messageBar().clearWidgets()
+                                        self.iface.messageBar().pushWidget(widget, Qgis.Success)
+                                        QgsProject.instance().layerTreeRoot().findLayer(layid).setItemVisibilityChecked(False)
                                     else:
                                         widget = self.iface.messageBar().createMessage("Intersecting preview "+str(count)+" feature. To clip feature click on the button:", "Clip")
                                         button = QPushButton(widget)
                                         button.setText("Clip")
                                         button.pressed.connect(self.clip)
                                         widget.layout().addWidget(button)
-                                        self.iface.messageBar().pushWidget(widget, Qgis.Info)
+                                        button1 = QPushButton(widget)
+                                        button1.setText("Dismiss")
+                                        button1.pressed.connect(self.clear)
+                                        widget.layout().addWidget(button1)
+                                        self.iface.messageBar().clearWidgets()
+                                        self.iface.messageBar().pushWidget(widget, Qgis.Success)
                             else:
                                 self.iface.messageBar().pushMessage("Clipper"," Select at least one feature !")
-#---> 0.2 new feature: polygon clipping preview
+                        else:
+                            self.iface.messageBar().pushWarning("Clipper","Unsupported type of vectorlayer: cannot perform operation, aborting...")
+#polygon clipping preview
     def preview_clip(self):
+        self.clear_result()
         layer = self.get_layer()
         if layer:
             layername = layer.name()
-            provider=layer.dataProvider()
-            features = layer.getFeatures()
+#            provider=layer.dataProvider()
+#            features = layer.getFeatures()
             for name, layer in list(QgsProject.instance().mapLayers().items()):
                 if layer.type() == QgsMapLayer.VectorLayer:
                     if layer.name()== layername:
                         #--->Polygon handling
                         #check for layer type
                         if layer.wkbType() == 2 or 6:
+                            # get layer selected for future use
+                            lyr = layer
+                            #get layer's id()
+                            layid = layer.id()
                             #get feature selection
                             selection = layer.selectedFeatures()
                             if len(selection)!=0:
@@ -342,7 +391,10 @@ class clipper(object):
                                             if g.id() != fsel.id():
                                                 if (g.geometry().intersects(fsel.geometry())):
                                                 #choose non selected intersecting features
-                                                    geometry = QgsGeometry.fromPolygonXY(g.geometry().asPolygon())
+                                                    if g.geometry().wkbType() == 6:
+                                                        geometry = QgsGeometry.fromMultiPolygonXY(g.geometry().asMultiPolygon())
+                                                    else:    
+                                                        geometry = QgsGeometry.fromPolygonXY(g.geometry().asPolygon())
                                                     attributes = g.attributes()
                                                     clipped = QgsFeature()
                                                     # Calculate the difference between the original 
@@ -361,39 +413,46 @@ class clipper(object):
                                     self.iface.mapCanvas().refresh()
                                     #output messages
                                     if count > 1:
+                                        #turn layer off for better clipping preview visibility
+                                        QgsProject.instance().layerTreeRoot().findLayer(layid).setItemVisibilityChecked(False)
+                                        #Populate messagebar
                                         widget = self.iface.messageBar().createMessage("Clipping preview of "+str(count)+" features. To clip features click on the button:", "Clip")
                                         button = QPushButton(widget)
                                         button.setText("Clip")
                                         button.pressed.connect(self.clip)
                                         widget.layout().addWidget(button)
-                                        self.iface.messageBar().pushWidget(widget, Qgis.Info)
+                                        button1 = QPushButton(widget)
+                                        button1.setText("Dismiss")
+                                        button1.pressed.connect(self.clear)
+                                        widget.layout().addWidget(button1)
+                                        self.iface.messageBar().clearWidgets()
+                                        self.iface.messageBar().pushWidget(widget, Qgis.Success)
                                     else:
+                                        #turn layer off for better clipping preview visibility
+                                        QgsProject.instance().layerTreeRoot().findLayer(layid).setItemVisibilityChecked(False)
+                                        #Populate messagebar
                                         widget = self.iface.messageBar().createMessage("Clipping preview "+str(count)+" feature. To clip feature click on the button:", "Clip")
                                         button = QPushButton(widget)
                                         button.setText("Clip")
                                         button.pressed.connect(self.clip)
                                         widget.layout().addWidget(button)
-                                        self.iface.messageBar().pushWidget(widget, Qgis.Info)
+                                        button1 = QPushButton(widget)
+                                        button1.setText("Dismiss")
+                                        button1.pressed.connect(self.clear)
+                                        widget.layout().addWidget(button1)
+                                        self.iface.messageBar().clearWidgets()
+                                        self.iface.messageBar().pushWidget(widget, Qgis.Success)
                             else:
                                 self.iface.messageBar().pushMessage("Clipper"," Select at least one feature !", level=Qgis.Critical, duration=4)
+        return lyr
 #---> Custom functions end 
     # run method that performs all the real work
     def run(self):
+        self.clear_result()
         check = 0
         check = self.checkvector()
         if check == 0:
-            self.iface.messageBar().pushMessage("Clipper"," No Vector layer found !",level=Qgis.Critical)
-            #QMessageBox.critical(None, "Critical","No vector layers \n Please load some, then reload plugin")
+            self.iface.messageBar().pushCritical("Clipper"," No Vector layer found !")
             pass
         else:
             self.clip()
-            
-        # show the dialog
-        #self.dlg.show()
-        # Run the dialog event loop
-        #result = self.dlg.exec_()
-        # See if OK was pressed
-        #if result == 1:
-            # do something useful (delete the line containing pass and
-            # substitute with your code)
-            #pass

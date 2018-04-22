@@ -1,5 +1,7 @@
 <RCC>
-    <qresource prefix="/plugins/clipper" >
+    <qresource prefix="/plugins/clipper">
         <file>icon.png</file>
+        <file>icon_prev_int.png</file>
+        <file>icon_prev_clip.png</file>
     </qresource>
 </RCC>
