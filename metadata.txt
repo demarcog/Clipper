@@ -22,7 +22,7 @@ email=demarco.giuseppe@gmail.com
 # Optional items:
 
 # Uncomment the following line and add your changelog entries:
-changelog = 0.1.1 Change location of menu loading from Plugin to Vector Menu 0.2 version lets you preview intersecting features (only for polygons) in a memory layer and then going to the real clipping feature 0.2.1 version has implemented geometry checking for feature to be clipped and an error messager bar displays not valid geometries id, there is also a menu item to preview intersect(polygons)
+changelog = 0.1.1 Change location of menu loading from Plugin to Vector Menu 0.2 version lets you preview intersecting features (only for polygons) in a memory layer and then going to the real clipping feature 0.2.1 version has implemented geometry checking for feature to be clipped and an error messager bar displays not valid geometries id, there is also a menu item to preview intersect(polygons) 0.3 Updated code to API changes
 
 # tags are comma separated with spaces allowed
 tags=vector, clip, shapefile,difference, polygon, line
