@@ -32,7 +32,7 @@ from qgis.PyQt.QtXml import *
 # Initialize Qt resources from file resources.py
 from . import resources_rc
 import os.path
-#import pdb
+import pdb
 global lyr
 lyr = None
 class clipper(object):
@@ -60,57 +60,52 @@ class clipper(object):
         self.action = QAction(
             QIcon(":/plugins/clipper/icon.png"),
             u"Clipper", self.iface.mainWindow())
-        self.action3 = QAction(
+            
+        self.action1 = QAction(
             QIcon(":/plugins/clipper/icon_prev_int.png"),
             u"Clipper Intersection Preview", self.iface.mainWindow())
-        self.action4 = QAction(
+        
+        self.action2 = QAction(
             QIcon(":/plugins/clipper/icon_prev_clip.png"),
             u"Clipper Clipping Preview", self.iface.mainWindow())
             
+        self.action3 = QAction(
+            QIcon(":/plugins/clipper/icon_multi.png"),
+            u"Clipper Clip with multiple selection", self.iface.mainWindow())
+            
         #Andreas Wicht brilliant suggestion: thanks a lot for this! 
-        self.action6 = QAction(
+        self.action4 = QAction(
             QIcon(":/plugins/clipper/icon_paste.png"),
             u"Clipper Paste intersection", self.iface.mainWindow())
-        self.action0 = QAction( QCoreApplication.translate("Clipper", "Clip" ), self.iface.mainWindow() )
-        #men items intersection and clipping preview
-        self.action1 = QAction( QCoreApplication.translate("Clipper", "Intersection Preview (Polygon)" ), self.iface.mainWindow() )
-        self.action2 = QAction( QCoreApplication.translate("Clipper", "Clipping Preview (Polygon)" ), self.iface.mainWindow() )
-        self.action5 = QAction( QCoreApplication.translate("Clipper", "Clip with multiple selection" ), self.iface.mainWindow() )
-        
+                
         #connect the action to the run method
         self.action.triggered.connect(self.run)
-        #clip directly from menu
-        self.action0.triggered.connect(self.run)
-        #connect action to preview function
         self.action1.triggered.connect(self.preview_int)
         self.action2.triggered.connect(self.preview_clip)
-        self.action3.triggered.connect(self.preview_int)
-        self.action4.triggered.connect(self.preview_clip)
-        self.action5.triggered.connect(self.multi_clip)
+        self.action3.triggered.connect(self.multi_clip)
         #Andreas Wicht suggestion
-        self.action6.triggered.connect(self.clip_paste)
+        self.action4.triggered.connect(self.clip_paste)
         
-
-
         # Add toolbar button and menu item the ones with icons
         self.iface.addToolBarIcon(self.action)
+        self.iface.addToolBarIcon(self.action1)
+        self.iface.addToolBarIcon(self.action2)
         self.iface.addToolBarIcon(self.action3)
         self.iface.addToolBarIcon(self.action4)
-        self.iface.addToolBarIcon(self.action6)
         
         #Add to menu action preview and clip
-        self.iface.addPluginToVectorMenu(u"&Clipper", self.action0)
-        self.iface.addPluginToVectorMenu(u"&Clipper",  self.action5)
-        self.iface.addPluginToVectorMenu(u"&Clipper", self.action1)
+        self.iface.addPluginToVectorMenu(u"&Clipper", self.action)
+        self.iface.addPluginToVectorMenu(u"&Clipper",  self.action1)
         self.iface.addPluginToVectorMenu(u"&Clipper", self.action2)
-        self.iface.addPluginToVectorMenu(u"Clipper", self.action6)
-
+        self.iface.addPluginToVectorMenu(u"&Clipper", self.action3)
+         #Andreas Wicht suggestion
+        self.iface.addPluginToVectorMenu(u"&Clipper", self.action4)
+        
     def unload(self):
         #Remove the plugin menu items and icons
         self.iface.removePluginVectorMenu(u"&Clipper", self.action)
-        self.iface.removePluginVectorMenu(u"&Clipper", self.action0)
-        self.iface.removePluginVectorMenu(u"&Clipper", self.action1)
-        self.iface.removePluginVectorMenu(u"&Clipper", self.action2)
+        self.iface.removePluginVectorMenu(u"&Clipper", self.action3)
+        self.iface.removePluginVectorMenu(u"&Clipper", self.action4)
         self.iface.removePluginVectorMenu(u"&Clipper", self.action5)
         #Andreas Wicht suggestion
         self.iface.removePluginVectorMenu(u"&Clipper", self.action6)
@@ -160,6 +155,8 @@ class clipper(object):
             self.iface.messageBar().pushMessage("Clipper"," No active layer found :please click on one!", level=Qgis.Critical, duration=3)
             
     def clip(self):
+        #pyqtRemoveInputHook()
+        #pdb.set_trace()
         # global variables
         global lyr #makes this variable "visibile"inside function
         lyr = None
@@ -178,7 +175,7 @@ class clipper(object):
                     if layer.name()== layername:
                         #--->Polygon handling
                         #check for layer type
-                        if layer.wkbType() ==3 or layer.wkbType() == 6:
+                        if layer.wkbType() == 3 or layer.wkbType() == 6:
                             layid = layer.id()
                             #get feature selection
                             selection = layer.selectedFeatures()
@@ -412,7 +409,8 @@ class clipper(object):
                             layid = layer.id()
                             #get feature selection
                             selection = layer.selectedFeatures()
-                            if len(selection)>0 and len(selection)<2:
+                            selectids = layer.selectedFeatureIds()
+                            if len(selectids)>0 and len(selectids)<2:
                                 multisel = 0
                                 if multisel ==0:
                                     self.clear_result()
@@ -493,7 +491,7 @@ class clipper(object):
                                         self.iface.messageBar().clearWidgets()
                                         self.iface.messageBar().pushWidget(widget, Qgis.Success)
                             else:
-                                if len(selection)>1:
+                                if len(selectids)>1:
                                     multisel = 1
                                     self.iface.messageBar().pushInfo("Clipper","Multiple selection found using multiple preview only on Multi/Polygons...")
                                     selids = layer.selectedFeatureIds()

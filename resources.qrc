@@ -1,6 +1,7 @@
 <RCC>
     <qresource prefix="/plugins/clipper">
         <file>icon.png</file>
+	<file>icon_multi.png</file>
         <file>icon_prev_int.png</file>
         <file>icon_prev_clip.png</file>
 	<file>icon_paste.png</file>

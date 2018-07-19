@@ -22,8 +22,7 @@ email=demarco.giuseppe@gmail.com
 # Optional items:
 
 # Uncomment the following line and add your changelog entries:
-changelog = 1.0 Porting to version 3.x of QGIS, code cleanup, added icons for preview tasks
-1.1 added multiple selection clipping, added function to paste intersection after clipping
+changelog = 1.0 Porting to version 3.x of QGIS, code cleanup, added icons for preview tasks 1.1 added multiple selection clipping, added function to paste intersection after clipping
 
 # tags are comma separated with spaces allowed
 tags=vector, clip, shapefile,difference, polygon, line
