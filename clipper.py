@@ -7,7 +7,7 @@
   a line or polygon clips all overlaying features
                               -------------------
         begin                : 2014-06-27
-        new version      : 2018-04-19 
+        new version      : 2018-07-18 
         copyright            : (C) 2018 by Giuseppe De Marco
         email                : demarco.giuseppe@gmail.com
  ***************************************************************************/
@@ -32,7 +32,7 @@ from qgis.PyQt.QtXml import *
 # Initialize Qt resources from file resources.py
 from . import resources_rc
 import os.path
-import pdb
+#import pdb
 global lyr
 lyr = None
 class clipper(object):
@@ -104,17 +104,18 @@ class clipper(object):
     def unload(self):
         #Remove the plugin menu items and icons
         self.iface.removePluginVectorMenu(u"&Clipper", self.action)
+        self.iface.removePluginVectorMenu(u"&Clipper", self.action1)
+        self.iface.removePluginVectorMenu(u"&Clipper", self.action2)
         self.iface.removePluginVectorMenu(u"&Clipper", self.action3)
-        self.iface.removePluginVectorMenu(u"&Clipper", self.action4)
-        self.iface.removePluginVectorMenu(u"&Clipper", self.action5)
         #Andreas Wicht suggestion
-        self.iface.removePluginVectorMenu(u"&Clipper", self.action6)
+        self.iface.removePluginVectorMenu(u"&Clipper", self.action4)
         
         self.iface.removeToolBarIcon(self.action)
+        self.iface.removeToolBarIcon(self.action1)
+        self.iface.removeToolBarIcon(self.action2)
         self.iface.removeToolBarIcon(self.action3)
-        self.iface.removeToolBarIcon(self.action4)
         #Andreas Wicht suggestion
-        self.iface.removeToolBarIcon(self.action6)
+        self.iface.removeToolBarIcon(self.action4)
 
         
 #---> Custom function begin
@@ -127,6 +128,8 @@ class clipper(object):
                         QgsProject.instance().layerTreeRoot().findLayer(layerid).setItemVisibilityChecked(True)
                         lyr.selectAll()
                         lyr.invertSelection()
+        #refresh the view and clear Widgets
+        self.iface.mapCanvas().refresh()
         self.iface.messageBar().clearWidgets()
         self.clear_result()
         return
@@ -138,6 +141,7 @@ class clipper(object):
                 layid = layer.id()
                 if layid:
                     QgsProject.instance().removeMapLayer(layid)
+                self.iface.mapCanvas().refresh()
         return
     
     def checkvector(self):
@@ -155,8 +159,6 @@ class clipper(object):
             self.iface.messageBar().pushMessage("Clipper"," No active layer found :please click on one!", level=Qgis.Critical, duration=3)
             
     def clip(self):
-        #pyqtRemoveInputHook()
-        #pdb.set_trace()
         # global variables
         global lyr #makes this variable "visibile"inside function
         lyr = None
@@ -179,7 +181,8 @@ class clipper(object):
                             layid = layer.id()
                             #get feature selection
                             selection = layer.selectedFeatures()
-                            if len(selection)!=0 and len(selection)<2:
+                            selectids = layer.selectedFeatureIds() #modified on 2018/07/20
+                            if len(selectids)!=0 and len(selectids)<2: #modified on 2018/07/20
                                 box = selection[0].geometry().boundingBox()
                                 request = QgsFeatureRequest(box)
                                 for f in layer.getFeatures(request):
@@ -199,7 +202,7 @@ class clipper(object):
                                             if g.id() != fsel.id():
                                                 if (g.geometry().intersects(fsel.geometry())):
                                                     #clipping non selected intersecting features
-                                                    geometry = QgsGeometry.fromPolygonXY(g.geometry().asPolygon())
+                                                    #geometry = QgsGeometry.fromPolygonXY(g.geometry().asPolygon()) #modified on 2018/07/20
                                                     attributes = g.attributes()
                                                     diff = QgsFeature()
                                                     # Calculate the difference between the original selected geometry and other features geometry only
@@ -230,17 +233,18 @@ class clipper(object):
                                 else:
                                     self.iface.messageBar().pushCritical("Clipper","something wrong ... adjacent polygons?")
                             else:
-                                if len(selection)>2:
+                                if len(selectids)>2: #modified on 2018/07/20
                                     self.multi_clip()
                                 else:
                                     self.iface.messageBar().pushMessage("Clipper"," Select at least one feature !", level=Qgis.Critical, duration=4)
                         #--->Linestring handling
-                        #A bit of working is needed for LineString objects...
-                        elif layer.wkbType() == 1 or layer.wkbType() == 5:
+                        #A bit of working is needed for LineString 2 objects or MultiLineString 5 ...
+                        elif layer.wkbType() == 2 or layer.wkbType() == 5:
                             #self.iface.messageBar().pushMessage("Clipper"," Line type layer found: clip function works as a line splitter: one has to manually delete wanted clipped parts...", level=QgsMessageBar.WARNING, duration=5)
                             #get the cutting line from feature selection
                             selection = layer.selectedFeatures()
-                            if len(selection) != 0:
+                            selectids = layer.selectedFeatureIds() #modified on 2018/07/20
+                            if len(selectids) != 0:#modified on 2018/07/20
                                 box =selection[0].geometry().boundingBox()
                                 request = QgsFeatureRequest(box)
                                 for f in layer.getFeatures(request):
@@ -277,7 +281,7 @@ class clipper(object):
                             else:
                                 self.iface.messageBar().pushCritical("Clipper"," Select at least one feature ! aborting ...")
 #polygon intersection preview
-    def preview_int(self):
+    def preview_int(self): #Only for polygons maybe later ...
         # global variables
         global lyr #makes this variable "visibile"inside function
         lyr = None
@@ -299,9 +303,10 @@ class clipper(object):
                         if layer.wkbType() == 3 or layer.wkbType() == 6:
                             #get feature selection
                             selection = layer.selectedFeatures()
-                            if len(selection)!=0:
+                            selectids = layer.selectedFeatureIds()#modified on 2018/07/20
+                            if len(selectids)!=0:                           #modified on 2018/07/20
                                 #multiple features to use as clipping stamp
-                                if len(selection) > 1:
+                                if len(selectids) > 1:                     #modified on 2018/07/20
                                     self.iface.messageBar().pushCritical("Clipper", "Multiple selection detected intersection preview may result useless aborting...")
                                     return
                                 box = selection[0].geometry().boundingBox()
@@ -332,11 +337,12 @@ class clipper(object):
                                         if g.geometry():
                                             if g.id() != fsel.id():
                                                 if (g.geometry().intersects(fsel.geometry())):
-                                                    #choose non selected intersecting features
-                                                    if g.geometry().wkbType() == 6:
-                                                        geometry = QgsGeometry.fromMultiPolygonXY(g.geometry().asMultiPolygon())
-                                                    else:
-                                                        geometry = QgsGeometry.fromPolygonXY(g.geometry().asPolygon())
+                                                    #choose non selected intersecting features 
+#modified on 2018/07/20
+#                                                    if g.geometry().wkbType() == 6:
+#                                                        geometry = QgsGeometry.fromMultiPolygonXY(g.geometry().asMultiPolygon())
+#                                                    else:
+#                                                        geometry = QgsGeometry.fromPolygonXY(g.geometry().asPolygon())
                                                     attributes = g.attributes()
                                                     inters = QgsFeature()
                                                     # Calculate the difference between the original 
@@ -385,8 +391,6 @@ class clipper(object):
                             self.iface.messageBar().pushWarning("Clipper","Unsupported type of vectorlayer: cannot perform operation, aborting...")
 #polygon clipping preview
     def preview_clip(self):
-        #pyqtRemoveInputHook()
-        #pdb.set_trace()
         # global variables
         global lyr #makes this variable "visibile"inside function
         lyr = None
@@ -401,16 +405,16 @@ class clipper(object):
                 if layer.type() == QgsMapLayer.VectorLayer:
                     if layer.name()== layername:
                         #--->Polygon handling
-                        #check for layer type
-                        if layer.wkbType() == 2 or 6:
+                        #check for layer type 3 Polygon , 6 multipolygon
+                        if layer.wkbType() == 3 or 6:
                             # get layer selected for future use
                             lyr = layer
                             #get layer's id()
                             layid = layer.id()
                             #get feature selection
                             selection = layer.selectedFeatures()
-                            selectids = layer.selectedFeatureIds()
-                            if len(selectids)>0 and len(selectids)<2:
+                            selectids = layer.selectedFeatureIds()                         #modified on 2018/07/20
+                            if len(selectids)>0 and len(selectids)<2:                   #modified on 2018/07/20
                                 multisel = 0
                                 if multisel ==0:
                                     self.clear_result()
@@ -491,7 +495,7 @@ class clipper(object):
                                         self.iface.messageBar().clearWidgets()
                                         self.iface.messageBar().pushWidget(widget, Qgis.Success)
                             else:
-                                if len(selectids)>1:
+                                if len(selectids)>1:                                  #modified on 2018/07/20
                                     multisel = 1
                                     self.iface.messageBar().pushInfo("Clipper","Multiple selection found using multiple preview only on Multi/Polygons...")
                                     selids = layer.selectedFeatureIds()
@@ -529,20 +533,21 @@ class clipper(object):
                                                             if g.id() != feat.id():
                                                                 if (g.geometry().intersects(feat.geometry())):
                                                                 #choose non selected intersecting features
-                                                                    if g.geometry().wkbType() == 6:
-                                                                        geometry = QgsGeometry.fromMultiPolygonXY(g.geometry().asMultiPolygon())
-                                                                    else:    
-                                                                        geometry = QgsGeometry.fromPolygonXY(g.geometry().asPolygon())
+#modified on 2018/07/20
+#                                                                    if g.geometry().wkbType() == 6:
+#                                                                        geometry = QgsGeometry.fromMultiPolygonXY(g.geometry().asMultiPolygon())
+#                                                                    else:    
+#                                                                        geometry = QgsGeometry.fromPolygonXY(g.geometry().asPolygon())
                                                                     attributes = g.attributes()
                                                                     clipped = QgsFeature()
                                                             # Calculate the difference between the original 
                                                             # selected geometry and other features geometry only
                                                             # if the features intersects the selected geometry
-                                                            #set new geometry
+                                                            # set new geometry
                                                                     clipped.setGeometry(g.geometry().difference(feat.geometry()))
-                                                            #copy attributes from original feature
+                                                            # copy attributes from original feature
                                                                     clipped.setAttributes(attributes)
-                                                            #add modified feature to memory layer
+                                                            # add modified feature to memory layer
                                                                     resultpr.addFeatures([clipped])
                                                                     count+=1
                                         layer.removeSelection()
@@ -585,9 +590,7 @@ class clipper(object):
                                 else:
                                     self.iface.messageBar().pushMessage("Clipper"," Select at least one feature !", level=Qgis.Critical, duration=4)
     
-    def multi_clip(self):
-#        pyqtRemoveInputHook()
-#        pdb.set_trace()
+    def multi_clip(self): #only for polygons
         global lyr
         if lyr != None:
             layer =lyr
@@ -599,8 +602,8 @@ class clipper(object):
                 if layer.type() == QgsMapLayer.VectorLayer:
                     if layer.name()== layername:
                         #--->Polygon handling
-                        #check for layer type
-                        if layer.wkbType() == 2 or 6:
+                        #check for layer type 3 Polygon , 6 multipolygon
+                        if layer.wkbType() == 3 or 6:
                             # get layer selected for future use
                             lyr = layer
                             #get layer selection ids
@@ -613,7 +616,7 @@ class clipper(object):
                             else:
                                 self.iface.messageBar().pushCritical("Clipper"," No multiple selection found , aborting ...")
 
-#polygon intersection clip & paste: an Andreas Wicht suggestion
+#polygon intersection clip & paste: an Andreas Wicht suggestion implemented july 18th 2018 by G. De Marco
     def clip_paste(self):
         # global variables
         global lyr #makes this variable "visibile"inside function
@@ -630,7 +633,7 @@ class clipper(object):
                 if layer.type() == QgsMapLayer.VectorLayer:
                     if layer.name()== layername:
                         #--->Polygon handling
-                        #check for layer type
+                        #check for layer type 3 Polygon or 6 Multipolygon
                         if layer.wkbType() == 3 or layer.wkbType() == 6:
                             #get feature selection
                             selection = layer.selectedFeatures()
@@ -660,8 +663,7 @@ class clipper(object):
                                     resultl.startEditing()
                                     resultl.setCrs(layer.crs()) 
                                     resultpr = resultl.dataProvider()
-                                    #do not add memory layer to mapcanvas
-                                    #QgsProject.instance().addMapLayer(resultl)
+                                    #do not add memory layer to mapcanvas 'cause it isn't necessary  !!!!
                                     #Add intersecting Features to memory layer resultl 
                                     for g in layer.getFeatures():
                                         #check for geometry validity...quick way
@@ -669,10 +671,10 @@ class clipper(object):
                                             if g.id() != fsel.id():
                                                 if (g.geometry().intersects(fsel.geometry())):
                                                     #choose non selected intersecting features
-                                                    if g.geometry().wkbType() == 6:
-                                                        geometry = QgsGeometry.fromMultiPolygonXY(g.geometry().asMultiPolygon())
-                                                    else:
-                                                        geometry = QgsGeometry.fromPolygonXY(g.geometry().asPolygon())
+#                                                    if g.geometry().wkbType() == 6:
+#                                                        geometry = QgsGeometry.fromMultiPolygonXY(g.geometry().asMultiPolygon())
+#                                                    else:
+#                                                        geometry = QgsGeometry.fromPolygonXY(g.geometry().asPolygon())
                                                     attributes = g.attributes()
                                                     inters = QgsFeature()
                                                     # Calculate the difference between the original 
