@@ -682,6 +682,7 @@ class clipper(object):
 #                                    pdb.set_trace()
                                     if count >0:
                                         cnt = 0
+                                        clipcount = 0
                                         #clear selection
                                         layer.removeSelection()
                                         #refresh the view
