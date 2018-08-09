@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """
 /***************************************************************************
  clipper
@@ -152,16 +152,21 @@ class clipper(object):
         return count
 
     def get_layer(self):
-        layer = self.iface.mapCanvas().currentLayer()
-        if layer:
+        global lyr #makes this variable "visibile"inside function
+        if lyr != None:
+            layer = lyr
             return layer
         else:
-            self.iface.messageBar().pushMessage("Clipper"," No active layer found :please click on one!", level=Qgis.Critical, duration=3)
+            layer = self.iface.mapCanvas().currentLayer()
+            if layer:
+                return layer
+            else:
+                self.iface.messageBar().pushMessage("Clipper"," No active layer found :please click on one!", level=Qgis.Critical, duration=3)
             
     def clip(self):
         # global variables
         global lyr #makes this variable "visibile"inside function
-        lyr = None
+        layer = self.get_layer()
         fsel = None
         self.clear_result()
         #close previously open messageBar
@@ -306,6 +311,7 @@ class clipper(object):
                                 if len(selectids) > 1:                     #modified on 2018/07/20
                                     self.iface.messageBar().pushCritical("Clipper", "Multiple selection detected intersection preview may result useless aborting...")
                                     return
+                                lyr = layer
                                 box = selection[0].geometry().boundingBox()
                                 request = QgsFeatureRequest(box)
                                 for f in layer.getFeatures(request):
@@ -579,10 +585,7 @@ class clipper(object):
     
     def multi_clip(self): #only for polygons
         global lyr
-        if lyr != None:
-            layer =lyr
-        else:
-            layer = self.get_layer()
+        layer = self.get_layer()
         if layer:
             layername = layer.name()
             for name, layer in list(QgsProject.instance().mapLayers().items()):
@@ -608,13 +611,12 @@ class clipper(object):
         #Find intersection------------------------------------------------------------------------------------------------------------------------
         # global variables
         global lyr #makes this variable "visibile"inside function
-        lyr = None
+        layer = self.get_layer()
         #remove intersect or clipped (preview) named layer in layers list 
         self.clear_result()
         #close previously open messageBar
         self.iface.messageBar().popWidget()
         #preview begin
-        layer = self.get_layer()
         if layer:
             layername = layer.name()
             for name, layer in list(QgsProject.instance().mapLayers().items()):
