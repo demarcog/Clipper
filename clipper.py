@@ -7,7 +7,7 @@
   a line or polygon clips all overlaying features
                               -------------------
         begin                : 2014-06-27
-        new version      : 2018-07-18 
+        new version      : 2018-08-08 
         copyright            : (C) 2018 by Giuseppe De Marco
         email                : demarco.giuseppe@gmail.com
  ***************************************************************************/
@@ -31,6 +31,7 @@ from qgis.PyQt.QtWidgets import *
 from qgis.PyQt.QtXml import *
 # Initialize Qt resources from file resources.py
 from . import resources_rc
+#import pdb
 import os.path
 #import pdb
 global lyr
@@ -126,8 +127,7 @@ class clipper(object):
                 if layerid:
                     if not QgsProject.instance().layerTreeRoot().findLayer(layerid).isVisible():
                         QgsProject.instance().layerTreeRoot().findLayer(layerid).setItemVisibilityChecked(True)
-                        lyr.selectAll()
-                        lyr.invertSelection()
+                        lyr.removeSelection()
         #refresh the view and clear Widgets
         self.iface.mapCanvas().refresh()
         self.iface.messageBar().clearWidgets()
@@ -221,8 +221,7 @@ class clipper(object):
                                             self.iface.messageBar().pushMessage("Clipper","possible invalid geometry id:"+str(g.id()), level=Qgis.Critical, duration=7)
                                     #refresh the view and clear selection
                                     self.iface.mapCanvas().refresh()
-                                    self.iface.mapCanvas().currentLayer().selectAll()
-                                    self.iface.mapCanvas().currentLayer().invertSelection()
+                                    self.iface.mapCanvas().currentLayer().removeSelection()
                                     #restore layer visibility
                                     if not QgsProject.instance().layerTreeRoot().findLayer(layid).isVisible():
                                         QgsProject.instance().layerTreeRoot().findLayer(layid).setItemVisibilityChecked(True)
@@ -255,8 +254,7 @@ class clipper(object):
                                 if fsel:
                                     #unselect all features and set layer editable
                                     layer.startEditing()
-                                    self.iface.mapCanvas().currentLayer().selectAll()
-                                    self.iface.mapCanvas().currentLayer().invertSelection()
+                                    self.iface.mapCanvas().currentLayer().removeSelection()
                                     count = 0
                                     #select features to be splitted
                                     to_be_clipped=[]
@@ -271,8 +269,7 @@ class clipper(object):
                                         t=layer.splitFeatures(fsel.geometry().asPolyline())
                                         #refresh the view and clear selection
                                         self.iface.mapCanvas().refresh()
-                                        self.iface.mapCanvas().currentLayer().selectAll()
-                                        self.iface.mapCanvas().currentLayer().invertSelection()
+                                        self.iface.mapCanvas().currentLayer().removeSelection()
                                         if count > 1:
                                             self.iface.messageBar().pushMessage("Clipper",""+str(count)+" features split: "+"   Remember to save your edits...", level=Qgis.Info)
                                         else:
@@ -338,11 +335,6 @@ class clipper(object):
                                             if g.id() != fsel.id():
                                                 if (g.geometry().intersects(fsel.geometry())):
                                                     #choose non selected intersecting features 
-#modified on 2018/07/20
-#                                                    if g.geometry().wkbType() == 6:
-#                                                        geometry = QgsGeometry.fromMultiPolygonXY(g.geometry().asMultiPolygon())
-#                                                    else:
-#                                                        geometry = QgsGeometry.fromPolygonXY(g.geometry().asPolygon())
                                                     attributes = g.attributes()
                                                     inters = QgsFeature()
                                                     # Calculate the difference between the original 
@@ -533,11 +525,6 @@ class clipper(object):
                                                             if g.id() != feat.id():
                                                                 if (g.geometry().intersects(feat.geometry())):
                                                                 #choose non selected intersecting features
-#modified on 2018/07/20
-#                                                                    if g.geometry().wkbType() == 6:
-#                                                                        geometry = QgsGeometry.fromMultiPolygonXY(g.geometry().asMultiPolygon())
-#                                                                    else:    
-#                                                                        geometry = QgsGeometry.fromPolygonXY(g.geometry().asPolygon())
                                                                     attributes = g.attributes()
                                                                     clipped = QgsFeature()
                                                             # Calculate the difference between the original 
@@ -618,6 +605,7 @@ class clipper(object):
 
 #polygon intersection clip & paste: an Andreas Wicht suggestion implemented july 18th 2018 by G. De Marco
     def clip_paste(self):
+        #Find intersection------------------------------------------------------------------------------------------------------------------------
         # global variables
         global lyr #makes this variable "visibile"inside function
         lyr = None
@@ -625,7 +613,7 @@ class clipper(object):
         self.clear_result()
         #close previously open messageBar
         self.iface.messageBar().popWidget()
-        #intersection search begin
+        #preview begin
         layer = self.get_layer()
         if layer:
             layername = layer.name()
@@ -633,19 +621,20 @@ class clipper(object):
                 if layer.type() == QgsMapLayer.VectorLayer:
                     if layer.name()== layername:
                         #--->Polygon handling
-                        #check for layer type 3 Polygon or 6 Multipolygon
+                        #check for layer type
                         if layer.wkbType() == 3 or layer.wkbType() == 6:
                             #get feature selection
                             selection = layer.selectedFeatures()
-                            if len(selection)!=0:
+                            selectids = layer.selectedFeatureIds()#modified on 2018/07/20
+                            if len(selectids)!=0:                           #modified on 2018/07/20
                                 #multiple features to use as clipping stamp
-                                if len(selection) > 1:
-                                    self.iface.messageBar().pushCritical("Clipper", "Multiple selection detected intersection may result useless aborting...")
+                                if len(selectids) > 1:                     #modified on 2018/07/20
+                                    self.iface.messageBar().pushCritical("Clipper", "Multiple selection detected intersection preview may result useless aborting...")
                                     return
                                 box = selection[0].geometry().boundingBox()
                                 request = QgsFeatureRequest(box)
                                 for f in layer.getFeatures(request):
-                                    #check for geometry validity ... quick way
+                                    #check for geometry validity
                                     if f.geometry():
                                         if f.id() == selection[0].id():
                                             fsel = f
@@ -663,18 +652,12 @@ class clipper(object):
                                     resultl.startEditing()
                                     resultl.setCrs(layer.crs()) 
                                     resultpr = resultl.dataProvider()
-                                    #do not add memory layer to mapcanvas 'cause it isn't necessary  !!!!
-                                    #Add intersecting Features to memory layer resultl 
                                     for g in layer.getFeatures():
-                                        #check for geometry validity...quick way
+                                        #check for geometry validity.
                                         if g.geometry():
                                             if g.id() != fsel.id():
                                                 if (g.geometry().intersects(fsel.geometry())):
-                                                    #choose non selected intersecting features
-#                                                    if g.geometry().wkbType() == 6:
-#                                                        geometry = QgsGeometry.fromMultiPolygonXY(g.geometry().asMultiPolygon())
-#                                                    else:
-#                                                        geometry = QgsGeometry.fromPolygonXY(g.geometry().asPolygon())
+                                                    #choose non selected intersecting features 
                                                     attributes = g.attributes()
                                                     inters = QgsFeature()
                                                     # Calculate the difference between the original 
@@ -689,42 +672,75 @@ class clipper(object):
                                                     count+=1
                                         else:
                                             self.iface.messageBar().pushCritical("Clipper","possible invalid geometry id:"+str(g.id()))
+                                    #save memory layer
                                     resultl.commitChanges()
                                     #refresh the view
-                                    #self.iface.mapCanvas().refresh()
-                                    #output messages
-                                    if count > 1:
-                                        #clip layer features
-                                        self.clip()
-                                        #the paste intersection into clipped layer 
+                                    self.iface.mapCanvas().refresh()
+#----------------finished intersection creation, now it's time to move on:
+#--------------- c'mon baby .... let's do the clip .... 
+#                                    pyqtRemoveInputHook()
+#                                    pdb.set_trace()
+                                    if count >0:
                                         cnt = 0
-                                        for r in resultl.getFeatures():
-                                            if r.geometry():
-                                                pgeometry = r.geometry()
-                                                pattributes = r.attributes()
+                                        #clear selection
+                                        layer.removeSelection()
+                                        #refresh the view
+                                        self.iface.mapCanvas().refresh()
+                                        layer.startEditing()
+                                        #paste intersecting features from memory layer select and clip
+                                        for p in resultl.getFeatures():
+                                            if p.geometry():
+                                                #request features with boundingbox 
+                                                resultl.select(p.id())
+                                                selection = resultl.selectedFeatures()
+                                                rbox = selection[0].geometry().boundingBox()
+                                                rrequest = QgsFeatureRequest(rbox)
+                                                for z in layer.getFeatures(rrequest):
+                                                    if (z.geometry().intersects(p.geometry())):
+                                                        attributes = z.attributes()
+                                                        diff = QgsFeature()
+                                                    # Calculate the difference between the original selected geometry and other features geometry only
+                                                    # if the features intersects the selected geometry and set new geometry
+                                                        diff.setGeometry(z.geometry().difference(p.geometry()))
+                                                    #copy attributes from original feature
+                                                        diff.setAttributes(attributes)
+                                                    #add modified feature to layer
+                                                        layer.addFeature(diff)
+                                                    #remove old feature
+                                                        if layer.deleteFeature(z.id()):
+                                                            clipcount +=1
+                                                        else:
+                                                            clipcount = 0 
+                                                #assign values to feature to be pasted
+                                                geom = p.geometry()
+                                                attrs = p.attributes()
                                                 pastef = QgsFeature()
-                                                pastef.setGeometry(pgeometry)
+                                                pastef.setGeometry(geom)
+                                                #set an id not to lose the pasted feature reference...
+#                                                id = 9999+cnt
+#                                                pastef.setId(id)
                                                 #copy attributes from original feature
-                                                pastef.setAttributes(pattributes)
+                                                pastef.setAttributes(attrs)                                  
                                                 #add modified feature to memory layer
-                                                layer.dataProvider().addFeatures([pastef])
-                                                cnt +=1
+                                                if layer.dataProvider().addFeatures([pastef]):
+                                                    cnt +=1
                                             else:
-                                                self.iface.messageBar().pushCritical("Clipper","possible invalid geometry id:"+str(r.id()))
-                                            if cnt > 1:
-                                                widget = self.iface.messageBar().createMessage("Clip and Paste of "+str(cnt)+" Intersecting features successful.Remember to manually save your edits if the outcome is satisfactory ...", " Clipper")
-                                                button = QPushButton(widget)
-                                                button.setText("Dismiss")
-                                                button.pressed.connect(self.clear)
-                                                widget.layout().addWidget(button)
-                                                self.iface.messageBar().clearWidgets()
-                                                self.iface.messageBar().pushWidget(widget, Qgis.Success)
+                                                self.iface.messageBar().pushCritical("Clipper","possible invalid geometry id:"+str(p.id()))
+                                        if cnt >0:
+                                            widget = self.iface.messageBar().createMessage("Clip and Paste of "+str(cnt)+" Intersecting features successful.Remember to manually save your edits if the outcome is satisfactory ...", " Clipper")
+                                            button = QPushButton(widget)
+                                            button.setText("Dismiss")
+                                            button.pressed.connect(self.clear)
+                                            widget.layout().addWidget(button)
+                                            self.iface.messageBar().clearWidgets()
+                                            self.iface.messageBar().pushWidget(widget, Qgis.Success)
+                                        else:
+                                            self.iface.messageBar().pushCritical("Clipper","No intersecting features") 
+                                    else:
+                                        self.iface.messageBar().pushCritical("Clipper","No intersecting features") 
                             else:
-                                self.iface.messageBar().pushCritical("Clipper"," Select at least one feature !")
-                        else:
-                            self.iface.messageBar().pushWarning("Clipper","Unsupported type of vectorlayer: cannot perform operation, aborting...")
-
-
+                                self.iface.messageBar().pushCritical("Clipper", "No selected feature aborting...")
+                                return
 #---> Custom functions end 
     # run method that performs all the real work
     def run(self):
