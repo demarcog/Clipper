@@ -160,10 +160,14 @@ class clipper(object):
                 return layer
             else:
                 self.iface.messageBar().pushMessage("Clipper"," No active layer found :please click on one!", level=Qgis.Critical, duration=3)
-            
+    
+    def Diff (self,  li1 ,  li2): 
+        li_dif = [i for i in li1 + li2 if i not in li1 or i not in li2] 
+        return li_dif 
+        
     def clip(self):
         # global variables
-        global lyr #makes this variable "visibile"inside function
+        global lyr #makes this variable "visible"inside function
         layer = self.get_layer()
         fsel = None
         self.clear_result()
@@ -602,50 +606,86 @@ class clipper(object):
                             #get layer selection ids
                             selectids = lyr.selectedFeatureIds()
                             if len(selectids)>1 :
-                                #check adjacent polygons
+                                #check adjacent polygons and collecting
                                 abox = lyr.boundingBoxOfSelected()
                                 if abox.area() >0:
                                     cnt = 0
-                                    for n in selectids:
-                                        feat = lyr.getFeature(n)
-                                        fbox = feat.geometry().boundingBox()
-                                        req= QgsFeatureRequest(fbox)
-                                        for check in lyr.getFeatures(req):
-                                            if feat.id() != check.id():
-                                                if (check.geometry().intersects(feat.geometry().boundingBox())):
-                                                    cnt += 1
-                                    if cnt > 2:#end checking for adjacent polygons
-                                        self.iface.messageBar().pushMessage("Clipper"," Adjacent polygons found !", level=Qgis.Critical, duration=4)
-                                        for n in selectids:
-                                            if (self.iface.mapCanvas().currentLayer().selectedFeatureCount () >0):
-                                                self.iface.mapCanvas().refresh()
-                                                self.iface.mapCanvas().currentLayer().removeSelection()
-                                            lyr.select(n)
-                                            request = QgsFeatureRequest(abox)
-                                            if lyr.isEditable():
-                                                count = 0
-                                            else:
+                                    neighbours =[]
+                                    nonneighbours = []
+                                    request = QgsFeatureRequest(abox)
+                                    for f in layer.getFeatures(selectids):
+                                        for g in layer.getFeatures(selectids):
+                                            if f.id() != g.id():
+                                                if f.geometry().touches(g.geometry()):
+                                                    for check in neighbours:
+                                                        if f.id() ==  check:
+                                                            cnt +=1
+                                                    if cnt == 0:
+                                                        neighbours.append(f.id())
+                                                    else:
+                                                        cnt = 0
+                                                    for check in neighbours:
+                                                        if g.id() == check:
+                                                            cnt +=1
+                                                    if cnt == 0:
+                                                        neighbours.append(g.id())
+                                                    else:
+                                                        cnt = 0 #end collecting for adjacent polygons
+                                    # check non neighbours polygon selected and store them in a list
+                                    if len(selectids) != len(neighbours):
+                                       nonneighbours=self.Diff(selectids, neighbours)
+                                    if len(nonneighbours)>0: # non adjacent and adjacent polygons selected at the same time: first deal with non adjacent 
+                                    #and after follow procedure for adjacent polygons ... needs some testing? maybe someone else than me...
+                                        self.iface.messageBar().pushMessage("Clipper"," Adjacent polygons found along with non neighbours polygon selected...a tough one ! trying to make it work it out!", level=Qgis.Critical, duration=4)
+                                        #procedure for non adjacent polygons
+                                        self.iface.mapCanvas().currentLayer().removeSelection()
+                                        for n in nonneighbours:
+                                            self.iface.mapCanvas().currentLayer().select(n)
+                                            if lyr.selectedFeatures():
+                                                if self.clip():
+                                                    lyr.reload()
+                                    if len(neighbours)>1:# number of adjacent polygons and procedure for adjacent polygons
+                                        self.iface.messageBar().pushMessage("Clipper"," Adjacent polygons found ... trying to make it work it out!", level=Qgis.Critical, duration=4)
+                                        if neighbours != []:
+                                            lyr.removeSelection()
+                                            if not lyr.isEditable():
                                                 lyr.startEditing()
+                                            req = QgsFeatureRequest(neighbours)
+                                            geoms = None
+                                            for feat in lyr.getFeatures(req):
+                                                if geoms == None:
+                                                    geoms= feat.geometry()
+                                                else:
+                                                    geoms = geoms.combine(feat.geometry())
+                                                    attrs= feat.attributes()
+                                            if geoms != None:
+                                                #create clipping vector mask
+                                                newfeat = QgsFeature()
+                                                newfeat.setGeometry(geoms)
+                                                newfeat.setAttributes(attrs)
+                                                lyr.addFeature(newfeat)
                                                 count = 0
-                                            for f in lyr.getFeatures(request):
-                                                if f.id() == n:
-                                                    for g in  lyr.getFeatures(request):
-                                                        if g.id() != f.id():
-                                                            if g.geometry().intersects(f.geometry()):
-                                                                attributes = g.attributes()
-                                                                diff = QgsFeature()
+                                                for g in layer.getFeatures(request):
+                                                    if not g.id() in neighbours:
+                                                        if g.geometry().intersects(geoms):
+                                                            attributes = g.attributes()
+                                                            diff = QgsFeature()
                                                             # Calculate the difference between the original selected geometry and other features geometry only
                                                             # if the features intersects the selected geometry and set new geometry
-                                                                diff.setGeometry(g.geometry().difference(f.geometry()))
-                                                                #copy attributes from original feature
-                                                                diff.setAttributes(attributes)
-                                                                #add modified feature to layer
-                                                                lyr.addFeature(diff)
-                                                                #remove old feature
-                                                                if lyr.deleteFeature(g.id()):
-                                                                    count +=1
-                                                                else:
-                                                                    count = 0
+                                                            diff.setGeometry(g.geometry().difference(geoms))
+                                                            #copy attributes from original feature
+                                                            diff.setAttributes(attributes)
+                                                            #add modified feature to layer
+                                                            lyr.addFeature(diff)
+                                                            #remove old feature and newfeat
+                                                            if lyr.deleteFeature(g.id()):
+                                                                count +=1
+                                                            else:
+                                                                count = 0
+                                                if count > 0:
+                                                    lyr.deleteFeature(newfeat.id())
+                                                    lyr.reload()
+                                                    self.iface.mapCanvas().refresh()
                                     else:
                                         #procedure for non adjacent polygons
                                         self.iface.mapCanvas().currentLayer().removeSelection()
@@ -719,7 +759,7 @@ class clipper(object):
                                                     #copy attributes from original feature
                                                     inters.setAttributes(attributes)
                                                     diff.setAttributes(origattributes)#2019-07-22
-                                                    diff.setAttributes(attributes)#2019-07-22
+                                                    diff2.setAttributes(attributes)#2019-07-22
 #                                                    #add modified feature to memory layer
 #                                                    resultpr.addFeatures([inters]) #2019-07-22
                                                     layer.addFeatures([inters])
