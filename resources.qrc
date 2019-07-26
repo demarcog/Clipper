@@ -5,5 +5,6 @@
         <file>icon_prev_int.png</file>
         <file>icon_prev_clip.png</file>
 	<file>icon_paste.png</file>
+	<file>icon_sel.png</file>
     </qresource>
 </RCC>
