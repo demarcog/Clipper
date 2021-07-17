@@ -771,6 +771,8 @@ class clipper(object):
                                     cnt = 0
                                     if not layer.isEditable():
                                         layer.startEditing()
+                                    #pick intersection attributes
+                                    intersect_attributes=f.attributes()
                                     for g in layer.getFeatures(request):
                                         #check for geometry validity.
                                         if g.geometry():
@@ -781,34 +783,37 @@ class clipper(object):
                                                     origattributes = fsel.attributes()#2019-07-22
                                                     inters = QgsFeature()
                                                     diff = QgsFeature() #2019-07-22
-                                                    diff2 = QgsFeature()#2019-07-22
+                                                    #diff2 = QgsFeature()#2019-07-22
                                                     # Calculate the difference between the original 
                                                     # selected geometry and other features geometry only
                                                     # if the features intersects the selected geometry
                                                     #set new geometry for both the features then delete the original features
                                                     #and load the clipped features along with the intersection feature
-                                                    inters.setGeometry(g.geometry().intersection(fsel.geometry()))
-                                                    diff.setGeometry(g.geometry().difference(fsel.geometry()))#2019-07-22
-                                                    diff2.setGeometry(fsel.geometry().difference(g.geometry()))
-                                                    #copy attributes from original feature
+                                                    #2021-07-17
+                                                    inters.setGeometry(fsel.geometry().intersection(g.geometry()))
                                                     inters.setAttributes(origattributes)#2021-07-17
+                                                    diff.setGeometry(g.geometry().difference(fsel.geometry()))
                                                     diff.setAttributes(attributes)
-                                                    diff2.setAttributes(origattributes)
+                                                    if (layer.deleteFeature(g.id())):
+                                                        cnt +=1
+                                                    else:
+                                                        cnt =0
+                                                    #diff2.setGeometry(fsel.geometry().difference(g.geometry()))
+                                                    #diff2.setAttributes(origattributes)   
                                                     #inters.setAttributes(attributes)
                                                     #diff.setAttributes(origattributes)#2019-07-22
                                                     #diff2.setAttributes(attributes)#2019-07-22
-#                                                    #add modified feature to memory layer
-#                                                    resultpr.addFeatures([inters]) #2019-07-22
+                                                    #add modified feature to memory layer
+                                                    #resultpr.addFeatures([inters]) #2019-07-22
                                                     layer.addFeatures([inters])
                                                     layer.addFeatures([diff])
-                                                    layer.addFeatures([diff2])
-                                                    #remove old feature
-                                                    if layer.deleteFeature(g.id()) and layer.deleteFeature(fsel.id()):
-                                                        cnt +=1
-                                                    else:
-                                                        cnt = 0 
+                                                    #layer.addFeatures([diff2])
                                         else:
                                             self.iface.messageBar().pushCritical("Clipper","possible invalid geometry id:"+str(g.id()))
+                                    if (layer.deleteFeature(fsel.id())):
+                                        cnt +=1
+                                    else:
+                                        cnt = 0 
                                     #refresh the view
                                     self.iface.mapCanvas().refresh()
                                     self.iface.mapCanvas().currentLayer().reload()
