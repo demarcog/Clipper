@@ -7,10 +7,10 @@
   a line or polygon clips all overlaying features
                               -------------------
         begin                : 2014-06-27
-        new version      : 2019-08-08 
-        copyright            : (C) 2019 by Giuseppe De Marco
+        new version          : 2021-07-17 
+        copyright            : (C) 2021 by Giuseppe De Marco
         email                : demarco.giuseppe@gmail.com
-        plugin version   : 1.2
+        plugin version       : 1.2
  ***************************************************************************/
 
 /***************************************************************************
@@ -791,9 +791,12 @@ class clipper(object):
                                                     diff.setGeometry(g.geometry().difference(fsel.geometry()))#2019-07-22
                                                     diff2.setGeometry(fsel.geometry().difference(g.geometry()))
                                                     #copy attributes from original feature
-                                                    inters.setAttributes(attributes)
-                                                    diff.setAttributes(origattributes)#2019-07-22
-                                                    diff2.setAttributes(attributes)#2019-07-22
+                                                    inters.setAttributes(origattributes)#2021-07-17
+                                                    diff.setAttributes(attributes)
+                                                    diff2.setAttributes(origattributes)
+                                                    #inters.setAttributes(attributes)
+                                                    #diff.setAttributes(origattributes)#2019-07-22
+                                                    #diff2.setAttributes(attributes)#2019-07-22
 #                                                    #add modified feature to memory layer
 #                                                    resultpr.addFeatures([inters]) #2019-07-22
                                                     layer.addFeatures([inters])
