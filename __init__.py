@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """
 /***************************************************************************
  clipper
@@ -6,7 +6,7 @@
  This plugin lets you use clipping function in the same shapefile selecting a line or polygon clips all overlaying features
                              -------------------
         begin                : 2014-06-27
-        copyright            : (C) 2018 by Giuseppe De Marco
+        copyright            : (C) 2021 by Giuseppe De Marco
         email                : demarco.giuseppe@gmail.com
  ***************************************************************************/
 
