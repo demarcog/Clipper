@@ -7,10 +7,10 @@
   a line or polygon clips all overlaying features
                               -------------------
         begin                : 2014-06-27
-        new version          : 2021-07-17 
-        copyright            : (C) 2021 by Giuseppe De Marco
+        new version          : 2024-08-20 
+        copyright            : (C) 2024 by Giuseppe De Marco and Theo Rutten
         email                : demarco.giuseppe@gmail.com
-        plugin version       : 1.2
+        plugin version       : 1.3
  ***************************************************************************/
 
 /***************************************************************************
