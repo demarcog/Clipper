@@ -84,7 +84,13 @@ class clipper(object):
         self.action5 = QAction(
             QIcon(":/plugins/clipper/icon_sel.png"),
             u"Clipper Clip selection", self.iface.mainWindow())
-                
+        
+        # Theo Rutten suggestion: 
+        self.action6 = QAction(
+            QIcon(":/plugins/clipper/icon_multi_layer.png"),
+            u"Clipper Multi Layer Clip selection", self.iface.mainWindow())           
+             
+        
         #connect the action to the run method
         self.action.triggered.connect(self.run)
         self.action1.triggered.connect(self.preview_int)
@@ -94,7 +100,9 @@ class clipper(object):
         self.action4.triggered.connect(self.clip_paste)
         #Domenico Scinetti suggestion
         self.action5.triggered.connect(self.make_first_selection)
-        
+        # Theo Rutten suggestion
+        self.action6.triggered.connect(self.make_first_selection_allow_multiple_layers)
+
         # Add toolbar button and menu item the ones with icons
         self.iface.addToolBarIcon(self.action)
         self.iface.addToolBarIcon(self.action1)
@@ -102,6 +110,7 @@ class clipper(object):
         self.iface.addToolBarIcon(self.action3)
         self.iface.addToolBarIcon(self.action4)
         self.iface.addToolBarIcon(self.action5)
+        self.iface.addToolBarIcon(self.action6)
         
         #Add to menu action preview and clip
         self.iface.addPluginToVectorMenu(u"&Clipper", self.action)
@@ -112,7 +121,9 @@ class clipper(object):
         self.iface.addPluginToVectorMenu(u"&Clipper", self.action4)
         #Domenico Scinetti suggestion
         self.iface.addPluginToVectorMenu(u"&Clipper",  self.action5)
-        
+        #Theo Rutten suggestion
+        self.iface.addPluginToVectorMenu(u"&Clipper",  self.action6)        
+
     def unload(self):
         #Remove the plugin menu items and icons
         self.iface.removePluginVectorMenu(u"&Clipper", self.action)
@@ -123,7 +134,9 @@ class clipper(object):
         self.iface.removePluginVectorMenu(u"&Clipper", self.action4)
          #Domenico Scinetti suggestion
         self.iface.removePluginVectorMenu(u"&Clipper",  self.action5)
-        
+        # Theo Rutten suggestion
+        self.iface.removePluginVectorMenu(u"&Clipper",  self.action6)
+
         self.iface.removeToolBarIcon(self.action)
         self.iface.removeToolBarIcon(self.action1)
         self.iface.removeToolBarIcon(self.action2)
@@ -132,6 +145,8 @@ class clipper(object):
         self.iface.removeToolBarIcon(self.action4)
         #Domenico Scinetti suggestion
         self.iface.removeToolBarIcon(self.action5)
+        # Theo Rutten suggestion
+        self.iface.removeToolBarIcon(self.action6)        
 #---> Custom function begin
     def clear(self):
         if lyr:
@@ -874,6 +889,223 @@ class clipper(object):
                                 return firstselection
                             else:
                                     self.iface.messageBar().pushMessage("Clipper"," Select at least one feature !", level=Qgis.Critical, duration=4)
+
+    def make_first_selection_allow_multiple_layers(self):
+        # global variables
+        global lyr #makes this variable "visible"inside function
+        global firstselection
+        global firstlayer
+        global secondselection
+        global secondlayer
+        firstselection = []
+        firstlayer = layer = self.get_layer()
+        #remove intersect or clipped (preview) named layer in layers list 
+        self.clear_result()
+        #close previously open messageBar
+        self.iface.messageBar().popWidget()
+        #preview begin
+        if layer:
+            layername = layer.name()
+            for name, layer in list(QgsProject.instance().mapLayers().items()):
+                if layer.type() == QgsMapLayer.VectorLayer:
+                    if layer.name()== layername:
+                        #--->Polygon handling
+                        #check for layer type
+                        if layer.wkbType() == 3 or layer.wkbType() == 6:
+                            if layer.selectedFeatureCount() >0:
+                                firstselection = self.get_selection()
+                                if firstselection != []:
+                                    layer.removeSelection()
+                                    layer.reload()
+                                #Populate messagebar
+                                widget = self.iface.messageBar().createMessage(" Now select the features you need to clip and then click on the Clip button", "Clipper")
+                                button = QPushButton(widget)
+                                button.setText("Clip remove intersection(s)")
+                                button.pressed.connect(self.clip_keep_difference)
+                                widget.layout().addWidget(button)
+
+                                button3 = QPushButton(widget)
+                                button3.setText("Clip keep intersection(s)")
+                                button3.pressed.connect(self.clip_keep_intersection)
+                                widget.layout().addWidget(button3)
+
+                                button1 = QPushButton(widget)
+                                button1.setText("Dismiss")
+                                button1.pressed.connect(self.clear)
+                                widget.layout().addWidget(button1)
+                                self.iface.messageBar().clearWidgets()
+                                self.iface.messageBar().pushWidget(widget, Qgis.Success)
+                                return firstselection
+                            else:
+                                self.iface.messageBar().pushMessage("Clipper"," Select at least one feature !", level=Qgis.Critical, duration=4)
+
+    def clip_keep_difference(self):
+        global firstselection
+        global secondselection
+        global firstlayer
+
+        secondselection = []
+        self.clear_result()
+        #close previously open messageBar
+        self.iface.messageBar().popWidget()
+
+        layer = self.get_layer()
+
+        if layer.wkbType() != firstlayer.wkbType():
+            self.iface.messageBar().pushMessage("Clipper","First and second layer have different geometry types", level=Qgis.Critical, duration=7)
+            self.clear_result()
+            return
+
+        if len(firstselection)>0:
+            secondselection = self.get_selection()
+            
+            if secondselection == None or len(secondselection) == 0:
+                self.iface.messageBar().pushMessage("Clipper","Please select features to clip", level=Qgis.Critical, duration=7)
+                return
+
+            if len(secondselection)>0:
+                
+                if not layer.isEditable():
+                        layer.startEditing()
+                
+                clipfeat = firstlayer.getFeature(firstselection[0])
+
+                if firstlayer == layer:
+                    count = 0
+                    for n in secondselection:
+                        cutfeat = layer.getFeature(n)
+                        if cutfeat.geometry():
+                            if clipfeat.id() != cutfeat.id():
+                                if cutfeat.geometry().intersects(clipfeat.geometry()):
+                                    #clipping non selected intersecting features
+                                    attributes = cutfeat.attributes()
+                                    diff = QgsFeature()
+                                    # Calculate the difference between the original selected geometry and other features geometry only
+                                    # if the features intersects the selected geometry and set new geometry
+                                    diff.setGeometry(cutfeat.geometry().difference(clipfeat.geometry()))
+                                    #copy attributes from original feature
+                                    diff.setAttributes(attributes)
+                                    #add modified feature to layer
+                                    layer.addFeature(diff)
+                                    #remove old feature
+                                    if layer.deleteFeature(cutfeat.id()):
+                                        count +=1
+                                    else:
+                                        count = 0
+                        else:
+                            self.iface.messageBar().pushMessage("Clipper","possible invalid geometry id:"+str(cutfeat.id()), level=Qgis.Critical, duration=7)
+                else:
+                    count = 0
+                    for n in secondselection:
+                        cutfeat = layer.getFeature(n)
+                        if cutfeat.geometry():
+                            if clipfeat.id() != cutfeat.id():
+                                if cutfeat.geometry().intersects(clipfeat.geometry()):
+                                    #clipping non selected intersecting features
+                                    attributes = cutfeat.attributes()
+                                    diff = QgsFeature()
+                                    # Calculate the difference between the original selected geometry and other features geometry only
+                                    # if the features intersects the selected geometry and set new geometry
+                                    diff.setGeometry(cutfeat.geometry().difference(clipfeat.geometry()))
+                                    #copy attributes from original feature
+                                    diff.setAttributes(attributes)
+                                    #add modified feature to layer
+                                    layer.addFeature(diff)
+                                    #remove old feature
+                                    if layer.deleteFeature(cutfeat.id()):
+                                        count +=1
+                                    else:
+                                        count = 0
+                        else:
+                            self.iface.messageBar().pushMessage("Clipper","possible invalid geometry id:"+str(cutfeat.id()), level=Qgis.Critical, duration=7)
+                if count > 0:
+                    self.iface.messageBar().pushMessage("Clipper",""+str(count)+" features clipped: "+"   Remember to save your edits...", level=Qgis.Info)
+                            
+    def clip_keep_intersection(self):
+        global firstselection
+        global firstlayer
+        global secondselection
+        secondselection = None
+        self.clear_result()
+
+        #close previously open messageBar
+        self.iface.messageBar().popWidget()
+        layer = self.get_layer()
+
+        if layer.wkbType() != firstlayer.wkbType():
+            self.iface.messageBar().pushMessage("Clipper","First and second layer have different geometry types", level=Qgis.Critical, duration=7)
+            self.clear_result()
+            return
+
+        if len(firstselection)>0:
+            secondselection = self.get_selection()
+
+            if layer.wkbType() != 3 and layer.wkbType() != 6:
+                self.iface.messageBar().pushMessage("Clipper","Layer is not a (multi) polygon layer", level=Qgis.Critical, duration=7)
+                return
+
+            if not layer.isEditable():
+                layer.startEditing()
+
+            count = 0
+            if firstlayer == layer: 
+                #first and second layer are the same, 
+                clipfeat : QgsFeature = layer.getFeature(firstselection[0])
+                
+                for n in secondselection:
+                    cutfeat : QgsFeature = layer.getFeature(n)
+                    if cutfeat.geometry():
+                        if clipfeat.id() != cutfeat.id():
+                            if cutfeat.geometry().intersects(clipfeat.geometry()):
+                                #clipping non selected intersecting features
+                                attributes = cutfeat.attributes()
+                                diff = QgsFeature()
+                                
+                                clipfeat
+                                # Calculate the difference between the original selected geometry and other features geometry only
+                                # if the features intersects the selected geometry and set new geometry
+                                diff.setGeometry(cutfeat.geometry().difference(clipfeat.geometry()))
+                                #copy attributes from original feature
+                                diff.setAttributes(attributes)
+                                #add modified feature to layer
+                                layer.addFeature(diff)
+                                #remove old feature
+                                if layer.deleteFeature(cutfeat.id()):
+                                    count +=1
+                                else:
+                                    count = 0
+                    else:
+                        self.iface.messageBar().pushMessage("Clipper","possible invalid geometry id:"+str(cutfeat.id()), level=Qgis.Critical, duration=7)
+                if count > 0:
+                    self.iface.messageBar().pushMessage("Clipper",""+str(count)+" features clipped: "+"   Remember to save your edits...", level=Qgis.Info)
+
+            else: 
+                # first and second layer are not te same but have the same geometry type
+                clipfeat : QgsFeature = firstlayer.getFeature(firstselection[0])
+
+                for n in secondselection:
+                    cutfeat : QgsFeature = layer.getFeature(n)
+                    if cutfeat.geometry(): # the feature has a geometry, which is nice
+                        if cutfeat.geometry().intersects(clipfeat.geometry()):
+                            diff = QgsFeature()
+                            # Calculate the difference between the original selected geometry and other features geometry only
+                            # if the features intersects the selected geometry and set new geometry
+                            diff.setGeometry(cutfeat.geometry().intersection(clipfeat.geometry()))
+                            diff.setAttributes(cutfeat.attributes())
+                            layer.addFeature(diff)
+                            layer.deleteFeature(cutfeat.id())
+
+                            if layer.deleteFeature(cutfeat.id()):
+                                count +=1
+                            else:
+                                count = 0
+                        else:
+                            self.iface.messageBar().pushMessage("", f'Selected features do not intersect')
+                    else:
+                        self.iface.messageBar().pushMessage("Clipper","possible invalid geometry id:"+str(cutfeat.id()), level=Qgis.Critical, duration=7)
+
+            if count > 0:
+                self.iface.messageBar().pushMessage("Clipper",""+str(count)+" features clipped: "+"   Remember to save your edits...", level=Qgis.Info)
 
     def clip_selected(self):
         global firstselection
